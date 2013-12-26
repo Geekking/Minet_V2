@@ -3,6 +3,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.sql.Date;
+import java.util.HashMap;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -12,6 +21,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+
+import LoginRegisterView.LoginSocket.P2PDetectSocket;
+import networkManage.DataModel;
+import networkManage.MessageManipulator;
 
 
 public class RegisteView extends JFrame{
@@ -98,7 +111,7 @@ public class RegisteView extends JFrame{
 	            {
 	                if(isInputValid()){
 	                	//TODO:
-	                	if(true){
+	                	if( (new RegisterSocket()).register(userNameField.getText(), String.copyValueOf(passswordField.getPassword()),emailField.getText()) ){
 	                		HandleRegisterSuccess();
 	                	}
 	                	
@@ -124,7 +137,7 @@ public class RegisteView extends JFrame{
 			getContentPane().add(buttonGroup);
 		}
 		public void HandleRegisterSuccess(){
-			this.getInstance().setVisible(false);
+			RegisteView.getInstance().setVisible(false);
 			LoginRegisterView.getInstance().setVisible(true);
 		}
 		public void HandleCancel(){
@@ -160,5 +173,73 @@ public class RegisteView extends JFrame{
 			}
 			
 			return flag;
+		}
+		public class RegisterSocket extends Socket{
+			private BufferedReader in;
+			private PrintWriter out;
+			private RegisterSocket registerSocket ;
+			public RegisterSocket() throws UnknownHostException, IOException{
+				super(DataModel.getInstance().getServerIP(),DataModel.getInstance().getServerPort());
+				registerSocket = this;
+				in = new BufferedReader(new InputStreamReader(registerSocket.getInputStream()));
+				out = new PrintWriter(registerSocket.getOutputStream(),true);
+				
+			}
+			private boolean register(String userName,String userPassword,String email){
+				try {
+					if(MessageManipulator.getInstance().shakeHand(in, out, "MINET")){
+						HashMap<String,String> headRequest =new HashMap<String,String>();
+						HashMap<String,String> headline = new HashMap<String,String>();
+						HashMap<String,String> bodyline = new HashMap<String,String>();
+						headRequest.put("CSVersion", "CS1.0");
+						headRequest.put("MessageType","REGISTER");
+						headRequest.put("UserName",userName);
+						headline.put("Password", userPassword);
+						headline.put("Password", userPassword);
+						headline.put("Email", email);
+						headline.put("COntent-length", "0");
+						headline.put("Time", (new java.util.Date()).toString());
+						HashMap<String,HashMap<String,String> > msgMap = new HashMap<String,HashMap<String,String> >();
+						msgMap.put("requestline", headRequest);
+						msgMap.put("headline", headline);
+						msgMap.put("body", bodyline);
+						String msg = MessageManipulator.getInstance().formatAMessage(msgMap);
+						out.println(msg);
+						//TODO:set a time to stop
+						return HandleResult();
+					}else{
+						//TODO:handle false;
+					}
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				return false;
+			}
+			private boolean HandleResult(){
+				try {
+					String result = in.readLine();
+					HashMap<String,HashMap<String,String> > msgMap =  MessageManipulator.getInstance().parseMessage(result);
+					String CSVersiont = msgMap.get("requestline").get("0");
+					String MsgType = msgMap.get("requestline").get("1");
+					String registeState = msgMap.get("requestline").get("2");
+					String MsgDetail = msgMap.get("bodyline").get("Entity");
+					
+					if(registeState == "0"){
+						//TODO:process failed to login
+					}
+					else{
+						in.close();
+						out.close();
+						registerSocket.close();
+						return true;
+					}
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				return false;
+			}
 		}
 }
