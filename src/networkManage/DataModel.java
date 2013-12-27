@@ -1,23 +1,30 @@
-
+package networkManage;
 import java.util.ArrayList;
 
 public class DataModel {
-	private static String userName;
-	private static String passWord;
-	private static int csMessagePort;
+	private static String userName=null;
+	private static String passWord=null;
+	private static int csMessagePort=0;
 	private static int p2pAcceptPort=5202;
 	private static DataModel userInfo = null;
-	private static String serverIPAddr = "222.200.180.109";
-	private static int serverPort = 1;
+	private static String serverIPAddr = "172.18.157.254";
+	private int serverPort = 1234;
 	private static ArrayList<ArrayList<String> > onlineUsers;
-	private DataModel(){}
-	
 	
 	public synchronized  static  DataModel getInstance(){
 		if (userInfo == null){
 			userInfo = new DataModel();
 		}
 		return userInfo;
+	}
+	public boolean addOnlineUsers(ArrayList<String> aUser){
+		return onlineUsers.add(aUser);
+	}
+	public void removeOnlineUsers(int index){
+		onlineUsers.remove(index);
+	}
+	public void resetOnlineUsers(){
+		onlineUsers.clear();
 	}
 	public String getUserName(){
 		return userName;
@@ -59,7 +66,7 @@ public class DataModel {
 		}
 		else return false;
 	}
-	public boolean initOnlineUserlist(ArrayList onlineUserlist){
+	public boolean initOnlineUserlist(ArrayList<ArrayList<String> > onlineUserlist){
 		if (userName != null){
 			onlineUsers = onlineUserlist;
 			return true;
@@ -73,7 +80,7 @@ public class DataModel {
 		}
 		return false;
 	}
-	public ArrayList getOnlineUser(int index){
+	public ArrayList<String> getOnlineUser(int index){
 		if (index <0 || onlineUsers.size() < index){
 			return null;
 		}
@@ -81,12 +88,5 @@ public class DataModel {
 			return onlineUsers.get(index);
 		}
 	}
-	public ArrayList addAOnlineUser(ArrayList UserMessage){
-		if (onlineUsers.add(UserMessage) ){
-			return onlineUsers;
-		}
-		else{
-			return null;
-		}
-	}
+	
 }

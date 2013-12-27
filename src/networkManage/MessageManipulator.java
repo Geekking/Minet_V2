@@ -1,10 +1,7 @@
 package networkManage;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -19,55 +16,78 @@ public class MessageManipulator {
 		}
 		return msgMan;
 	}
-	
-	public HashMap<String,HashMap<String,String> > parseMessage(String message){
-		HashMap<String,HashMap<String,String> > msgMap =  new HashMap<String,HashMap<String,String> >();
-		
+	public HashMap<String,String> getHeadRequest(BufferedReader in) throws IOException{
 		HashMap<String,String> headRequest = new HashMap<String,String>();
-		HashMap<String,String> headline = new HashMap<String,String>();
-		HashMap<String,String> bodyline = new HashMap<String,String>();
-		
-		String[] messageline = message.split("\r\n");
-		int i=0;
-		String[] headrequestValues = messageline[0].split(" ");
+		String headrequestline = in.readLine();
+		String[] headrequestValues = headrequestline.split(" ");
 		for(int j=0;j<headrequestValues.length;j++){
 			Integer intj = new Integer(j);
 			headRequest.put(intj.toString(), headrequestValues[j]);
 		}
-		
-		for(i=1;i<messageline.length;i++){
-			if(messageline[i] == ""){
-				break;
-			}
-			else{
-				String[] headlineValues = messageline[i].split(" ");
-				headline.put(headlineValues[0], headlineValues[1]);
-			}
+		return headRequest;
+	}
+	public HashMap<String,String> getHeadLine(BufferedReader in) throws IOException{
+		HashMap<String,String> headline = new HashMap<String,String>();
+		String headlineStr = in.readLine();
+		while(headlineStr.length() >0){
+			String[] headlineValues = headlineStr.split(" ");
+			headline.put(headlineValues[0], headlineValues[1]);
+			headlineStr = in.readLine();
 		}
+		return headline;
+	}
+	public HashMap<String,String> getEntityMessage(BufferedReader in) throws IOException{
+		HashMap<String,String> bodyline = new HashMap<String,String>();
+		
+		String oneEntityline = in.readLine();
 		String entityMsg = "";
-		for(;i<messageline.length;i++){
-			if(messageline[i] == ""){
-				break;
-			}
-			else{
-				entityMsg += messageline[i];
-			}
+		while(oneEntityline.length() >0){
+			entityMsg += oneEntityline+"\n";
+			oneEntityline = in.readLine();
+		}
+		bodyline.put("Entity",entityMsg);
+		return bodyline;
+		
+	}
+	public HashMap<String,HashMap<String,String> > parseMessage(BufferedReader in) throws IOException{
+		HashMap<String,HashMap<String,String> > msgMap =  new HashMap<String,HashMap<String,String> >();
+		HashMap<String,String> headRequest = new HashMap<String,String>();
+		HashMap<String,String> headline = new HashMap<String,String>();
+		HashMap<String,String> bodyline = new HashMap<String,String>();
+		
+		String headrequestline = in.readLine();
+		String[] headrequestValues = headrequestline.split(" ");
+		for(int j=0;j<headrequestValues.length;j++){
+			Integer intj = new Integer(j);
+			headRequest.put(intj.toString(), headrequestValues[j]);
+		}
+		String headlineStr = in.readLine();
+		while(headlineStr.length() >0){
+			String[] headlineValues = headlineStr.split(" ");
+			headline.put(headlineValues[0], headlineValues[1]);
+			headlineStr = in.readLine();
+		}
+		String oneEntityline = in.readLine();
+		String entityMsg = "";
+		while(oneEntityline.length() >0){
+			entityMsg += oneEntityline+"\n";
+			oneEntityline = in.readLine();
 		}
 		bodyline.put("Entity",entityMsg);
 		msgMap.put("requestline", headRequest);
 		msgMap.put("headline", headline);
 		msgMap.put("bodyline", bodyline);
-		
 		return msgMap;
 	}
+	
 	public String formatAMessage(HashMap<String,HashMap<String,String> > msgMap){
 		String msg = new String();
 		//get REQUEST line:
 		HashMap<String,String> headRequest = msgMap.get("requestline");
 		HashMap<String,String> headline = msgMap.get("headline");
 		HashMap<String,String> bodyline = msgMap.get("body");
-		//process headrequest
-		Iterator itr = headRequest.keySet().iterator();
+		//process headRrequest
+		Iterator<String> itr = headRequest.keySet().iterator();
 		boolean isFirst=true;
 		while (itr.hasNext()){
 			Object key = itr.next();
@@ -97,8 +117,6 @@ public class MessageManipulator {
 		itr = bodyline.keySet().iterator();
 		while (itr.hasNext()){
 			Object key = itr.next();
-			msg += key.toString();
-			msg += " ";
 			msg += bodyline.get(key);
 			msg += "\r\n";
 		}
@@ -109,11 +127,14 @@ public class MessageManipulator {
 		String clientShakeHandMessage = type+" "+"Client"+"\r\n";
 		try{
 			out.println(clientShakeHandMessage);
+			System.out.println(clientShakeHandMessage);
 			//TODO:set a time out
 			String result = in.readLine();
-			if(result == type+" "+"Server"+"\r\n"){
+			System.out.println(result);
+			if(result.equals(type+" "+"Server")){
 				return true;
 			}
+			
 		}catch (Exception e){
 			
 		}

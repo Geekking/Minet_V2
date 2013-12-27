@@ -1,20 +1,15 @@
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.sql.Date;
 import java.util.HashMap;
 
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -22,7 +17,6 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
-import LoginRegisterView.LoginSocket.P2PDetectSocket;
 import networkManage.DataModel;
 import networkManage.MessageManipulator;
 
@@ -111,9 +105,14 @@ public class RegisteView extends JFrame{
 	            {
 	                if(isInputValid()){
 	                	//TODO:
-	                	if( (new RegisterSocket()).register(userNameField.getText(), String.copyValueOf(passswordField.getPassword()),emailField.getText()) ){
-	                		HandleRegisterSuccess();
-	                	}
+	                	try {
+							if( (new RegisterSocket()).register(userNameField.getText(), String.copyValueOf(passswordField.getPassword()),emailField.getText()) ){
+								HandleRegisterSuccess();
+							}
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
 	                	
 	                }
 	                
@@ -195,9 +194,8 @@ public class RegisteView extends JFrame{
 						headRequest.put("MessageType","REGISTER");
 						headRequest.put("UserName",userName);
 						headline.put("Password", userPassword);
-						headline.put("Password", userPassword);
 						headline.put("Email", email);
-						headline.put("COntent-length", "0");
+						headline.put("Content-length", "0");
 						headline.put("Time", (new java.util.Date()).toString());
 						HashMap<String,HashMap<String,String> > msgMap = new HashMap<String,HashMap<String,String> >();
 						msgMap.put("requestline", headRequest);
@@ -218,14 +216,13 @@ public class RegisteView extends JFrame{
 			}
 			private boolean HandleResult(){
 				try {
-					String result = in.readLine();
-					HashMap<String,HashMap<String,String> > msgMap =  MessageManipulator.getInstance().parseMessage(result);
-					String CSVersiont = msgMap.get("requestline").get("0");
+					HashMap<String,HashMap<String,String> > msgMap =  MessageManipulator.getInstance().parseMessage(in);
+					String CSVersion = msgMap.get("requestline").get("0");
 					String MsgType = msgMap.get("requestline").get("1");
 					String registeState = msgMap.get("requestline").get("2");
 					String MsgDetail = msgMap.get("bodyline").get("Entity");
 					
-					if(registeState == "0"){
+					if(registeState.equals("0")){
 						//TODO:process failed to login
 					}
 					else{

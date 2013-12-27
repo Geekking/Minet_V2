@@ -123,12 +123,12 @@ public class LoginRegisterView extends JFrame{
 		boolean flag = true;
 		userNameValidlabel.setVisible(false);
 		passwordValidlabel.setVisible(false);
-		if(usernameField.getText() ==""){
+		if(usernameField.getText().equals("")){
 			flag = false;
 			userNameValidlabel.setText("Type a name");
 			userNameValidlabel.setVisible(true);
 		}
-		if(pwdField.getPassword().length ==0 ){
+		if(pwdField.getPassword().length ==0){
 			flag = false;
 			passwordValidlabel.setText("Type password");
 			passwordValidlabel.setVisible(true);
@@ -144,30 +144,21 @@ public class LoginRegisterView extends JFrame{
 		try {
 			if((new LoginSocket()).login(usernameField.getText(), String.valueOf(pwdField.getPassword()) ) ){
 				loginRegisterView.setVisible(false);
-				ChatRoomView.getInstance().setVisible(true);
+				(new ChatRoomView()).setVisible(true);;
 			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	public void mouseClicked(MouseEvent e){
-		if(e.getSource() == loginButton){
-			System.out.println("Log in to the CS");
-		}
-		else if (e.getSource() == resetPasswordButton){
-			System.out.println("Reset your password");
-		}
-		else if(e.getSource() == registerButton){
-			System.out.println("Register");
-		}
-	}
+	
 	public class LoginSocket extends Socket{
 		private Socket loginSocket;
 		private P2PDetectSocket p2pDetectSocket;
 		private BufferedReader in;
 		private PrintWriter out;
 		private int P2PDetectPort = -1;
+		
 		public LoginSocket()throws Exception{
 			super(DataModel.getInstance().getServerIP(),DataModel.getInstance().getServerPort());
 			loginSocket = this;
@@ -189,7 +180,7 @@ public class LoginRegisterView extends JFrame{
 					headRequest.put("UserName",userName);
 					p2pDetectSocket =new P2PDetectSocket();
 					headline.put("Password", password);
-					headline.put("CSPort",String.valueOf(P2PDetectPort));
+					headline.put("Port",String.valueOf(P2PDetectPort));
 					headline.put("Content-length", "0");
 					headline.put("Time", (new java.util.Date()).toString());
 					
@@ -219,14 +210,13 @@ public class LoginRegisterView extends JFrame{
 		}
 		private boolean HandleLogin(){
 			try {
-				String result = in.readLine();
-				HashMap<String,HashMap<String,String> > msgMap =  MessageManipulator.getInstance().parseMessage(result);
+				HashMap<String,HashMap<String,String> > msgMap =  MessageManipulator.getInstance().parseMessage(in);
 				String CSVersiont = msgMap.get("requestline").get("0");
 				String MsgType = msgMap.get("requestline").get("1");
 				String loginState = msgMap.get("requestline").get("2");
 				String MsgDetail = msgMap.get("bodyline").get("Entity");
 				
-				if(loginState == "0"){
+				if(loginState.equals("0")){
 					//TODO:process failed to login
 				}
 				else{
@@ -242,9 +232,6 @@ public class LoginRegisterView extends JFrame{
 			}
 			
 			return false;
-		}
-		private void HandleLoginResult(String status){
-			
 		}
 		
 		
