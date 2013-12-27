@@ -124,6 +124,7 @@ public class MessageManipulator {
 		return msg;
 	}
 	public boolean shakeHand(BufferedReader in,PrintWriter out,String type) throws IOException{
+		
 		String clientShakeHandMessage = type+" "+"Client"+"\r\n";
 		try{
 			out.println(clientShakeHandMessage);
