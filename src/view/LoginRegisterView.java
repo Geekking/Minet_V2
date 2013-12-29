@@ -201,7 +201,6 @@ public class LoginRegisterView extends JFrame{
 		public LoginSocket() throws Exception{
 				super(DataModel.getInstance().getServerIP(),DataModel.getInstance().getServerPort());
 				loginSocket = this;
-				loginSocket.setSoTimeout(10000);
 				in = new BufferedReader(new InputStreamReader(loginSocket.getInputStream()));
 				out = loginSocket.getOutputStream();
 		}

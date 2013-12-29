@@ -226,6 +226,7 @@ public class ChatRoomView extends MouseAdapter {
 				
 			}catch (Exception e){
 				e.printStackTrace();
+				
 			}
 		}
 		public boolean SendCSMessage(String msgTosend){
@@ -254,7 +255,8 @@ public class ChatRoomView extends MouseAdapter {
 				
 				return true;
 			}catch (Exception e){
-				
+				e.printStackTrace();
+
 			}
 			return false;
 		}
@@ -305,7 +307,8 @@ public class ChatRoomView extends MouseAdapter {
 						outCS.write(msg.getBytes("UTF-8"));						
 					}
 				}catch (Exception e){
-					
+					e.printStackTrace();
+
 				}
 				
 			
@@ -318,7 +321,8 @@ public class ChatRoomView extends MouseAdapter {
 				try{
 					start();
 				}catch (Exception e){
-					
+					e.printStackTrace();
+
 				}
 				
 			}
@@ -342,7 +346,8 @@ public class ChatRoomView extends MouseAdapter {
 						}
 						
 					}catch (Exception e){
-						
+						e.printStackTrace();
+
 					}
 			}
 			public void HandleCSMessage(String username) throws IOException{
