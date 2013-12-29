@@ -1,6 +1,7 @@
+package view;
 import javax.swing.*;
 
-import ChatRoomView.OnlineUserModel;
+import view.ChatRoomView.OnlineUserModel;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;

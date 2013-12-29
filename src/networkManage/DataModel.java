@@ -1,22 +1,34 @@
 package networkManage;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 
+import view.*;
 public class DataModel {
-	private static String userName=null;
-	private static String passWord=null;
-	private static int csMessagePort=0;
-	private static int p2pAcceptPort=5202;
+	private static  String userName=null;
+	private  String passWord=null;
+	private  int p2pAcceptPort=5202;
 	private static DataModel userInfo = null;
-	private static String serverIPAddr = "172.18.157.254";
+	private  String serverIPAddr = "172.18.157.254";
 	private int serverPort = 1234;
-	private static ArrayList<ArrayList<String> > onlineUsers;
+	private  ArrayList<ArrayList<String> > onlineUsers;
 	
-	public synchronized  static  DataModel getInstance(){
+	public synchronized  static  DataModel getInstance() throws Exception{
 		if (userInfo == null){
 			userInfo = new DataModel();
 		}
 		return userInfo;
 	}
+	
+	private DataModel() throws Exception{
+		//new P2PDetectSocket();
+		onlineUsers = new ArrayList<ArrayList<String> >();
+	}
+	
+	
 	public boolean addOnlineUsers(ArrayList<String> aUser){
 		return onlineUsers.add(aUser);
 	}
@@ -29,12 +41,7 @@ public class DataModel {
 	public String getUserName(){
 		return userName;
 	}
-	public String getPassWord(){
-		return DataModel.passWord;
-	}
-	public int getcsMessagePort(){
-		return csMessagePort;
-	}
+	
 	public int getp2pAcceptPort(){
 		return p2pAcceptPort;
 	}
@@ -50,17 +57,13 @@ public class DataModel {
 	public void setpassWord(String password){
 		passWord = password;
 	}
-	public void setcsMessagePort(int csport){
-		csMessagePort = csport;
-	}
+	
 	public void setp2pAcceptPort(int p2pport){
 		p2pAcceptPort = p2pport;
 	}
-	public boolean initUserInfo(String username,String password,int csport,int p2pport){
+	public boolean initUserInfo(String username,int p2pport){
 		if(userName == null){
 			userName = username;
-			passWord = password;
-			csMessagePort = csport;
 			p2pAcceptPort = p2pport;
 			return true;
 		}
@@ -87,6 +90,39 @@ public class DataModel {
 		else {
 			return onlineUsers.get(index);
 		}
+	}
+	
+	public class P2PDetectSocket extends ServerSocket{
+		ServerSocket detectSocket;
+		public P2PDetectSocket()throws Exception{
+			super(DataModel.getInstance().getp2pAcceptPort());
+			detectSocket = this;
+			p2pAcceptPort = this.getLocalPort();
+			new DetectThread();
+		}
+		public class DetectThread extends Thread{
+			public DetectThread(){
+				start();
+			}
+			public void run(){
+				while (true) {
+					try {
+						Socket socket = detectSocket.accept();
+						try {
+							new P2PChatRequest(socket);
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+				}
+			}
+		}
+		
 	}
 	
 }

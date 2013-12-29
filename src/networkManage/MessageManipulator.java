@@ -1,9 +1,11 @@
 package networkManage;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.HashMap;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.util.LinkedHashMap;
 import java.util.Iterator;
+import java.util.Set;
 
 public class MessageManipulator {
 	private static  MessageManipulator msgMan = null;
@@ -16,9 +18,12 @@ public class MessageManipulator {
 		}
 		return msgMan;
 	}
-	public HashMap<String,String> getHeadRequest(BufferedReader in) throws IOException{
-		HashMap<String,String> headRequest = new HashMap<String,String>();
+	public LinkedHashMap<String,String> getHeadRequest(BufferedReader in) throws IOException{
+		LinkedHashMap<String,String> headRequest = new LinkedHashMap<String,String>();
+		
 		String headrequestline = in.readLine();
+		System.out.println(headrequestline);
+		
 		String[] headrequestValues = headrequestline.split(" ");
 		for(int j=0;j<headrequestValues.length;j++){
 			Integer intj = new Integer(j);
@@ -26,8 +31,9 @@ public class MessageManipulator {
 		}
 		return headRequest;
 	}
-	public HashMap<String,String> getHeadLine(BufferedReader in) throws IOException{
-		HashMap<String,String> headline = new HashMap<String,String>();
+	
+	public LinkedHashMap<String,String> getHeadLine(BufferedReader in) throws IOException{
+		LinkedHashMap<String,String> headline = new LinkedHashMap<String,String>();
 		String headlineStr = in.readLine();
 		while(headlineStr.length() >0){
 			String[] headlineValues = headlineStr.split(" ");
@@ -36,8 +42,8 @@ public class MessageManipulator {
 		}
 		return headline;
 	}
-	public HashMap<String,String> getEntityMessage(BufferedReader in) throws IOException{
-		HashMap<String,String> bodyline = new HashMap<String,String>();
+	public LinkedHashMap<String,String> getEntityMessage(BufferedReader in) throws IOException{
+		LinkedHashMap<String,String> bodyline = new LinkedHashMap<String,String>();
 		
 		String oneEntityline = in.readLine();
 		String entityMsg = "";
@@ -49,29 +55,34 @@ public class MessageManipulator {
 		return bodyline;
 		
 	}
-	public HashMap<String,HashMap<String,String> > parseMessage(BufferedReader in) throws IOException{
-		HashMap<String,HashMap<String,String> > msgMap =  new HashMap<String,HashMap<String,String> >();
-		HashMap<String,String> headRequest = new HashMap<String,String>();
-		HashMap<String,String> headline = new HashMap<String,String>();
-		HashMap<String,String> bodyline = new HashMap<String,String>();
+	public LinkedHashMap<String,LinkedHashMap<String,String> > parseMessage(BufferedReader in) throws IOException{
+		LinkedHashMap<String,LinkedHashMap<String,String> > msgMap =  new LinkedHashMap<String,LinkedHashMap<String,String> >();
+		LinkedHashMap<String,String> headRequest = new LinkedHashMap<String,String>();
+		LinkedHashMap<String,String> headline = new LinkedHashMap<String,String>();
+		LinkedHashMap<String,String> bodyline = new LinkedHashMap<String,String>();
 		
 		String headrequestline = in.readLine();
+		//System.out.println(headrequestline);
+		
 		String[] headrequestValues = headrequestline.split(" ");
 		for(int j=0;j<headrequestValues.length;j++){
 			Integer intj = new Integer(j);
 			headRequest.put(intj.toString(), headrequestValues[j]);
 		}
 		String headlineStr = in.readLine();
+		//System.out.println(headlineStr);
+		
 		while(headlineStr.length() >0){
 			String[] headlineValues = headlineStr.split(" ");
 			headline.put(headlineValues[0], headlineValues[1]);
 			headlineStr = in.readLine();
 		}
 		String oneEntityline = in.readLine();
-		String entityMsg = "";
+		String entityMsg = oneEntityline;
 		while(oneEntityline.length() >0){
 			entityMsg += oneEntityline+"\n";
 			oneEntityline = in.readLine();
+			
 		}
 		bodyline.put("Entity",entityMsg);
 		msgMap.put("requestline", headRequest);
@@ -80,17 +91,17 @@ public class MessageManipulator {
 		return msgMap;
 	}
 	
-	public String formatAMessage(HashMap<String,HashMap<String,String> > msgMap){
+	public String formatAMessage(LinkedHashMap<String,LinkedHashMap<String,String> > msgMap){
 		String msg = new String();
 		//get REQUEST line:
-		HashMap<String,String> headRequest = msgMap.get("requestline");
-		HashMap<String,String> headline = msgMap.get("headline");
-		HashMap<String,String> bodyline = msgMap.get("body");
+		LinkedHashMap<String,String> headRequest = msgMap.get("requestline");
+		LinkedHashMap<String,String> headline = msgMap.get("headline");
+		LinkedHashMap<String,String> bodyline = msgMap.get("body");
 		//process headRrequest
-		Iterator<String> itr = headRequest.keySet().iterator();
+		Set<String> keyset = headRequest.keySet();
+		
 		boolean isFirst=true;
-		while (itr.hasNext()){
-			Object key = itr.next();
+		for(String key:keyset){
 			if (isFirst){
 				isFirst =false;
 				msg += headRequest.get(key);
@@ -103,7 +114,7 @@ public class MessageManipulator {
 		msg += "\r\n";
 		
 		//process headline
-		itr = headline.keySet().iterator();
+		Iterator itr = headline.keySet().iterator();
 		while (itr.hasNext()){
 			Object key = itr.next();
 			msg += key.toString();
@@ -121,23 +132,34 @@ public class MessageManipulator {
 			msg += "\r\n";
 		}
 		msg += "\r\n";
+		System.out.println(msg);
 		return msg;
 	}
-	public boolean shakeHand(BufferedReader in,PrintWriter out,String type) throws IOException{
+	public boolean shakeHand(BufferedReader in,OutputStream out,String type) throws IOException{
 		
 		String clientShakeHandMessage = type+" "+"Client"+"\r\n";
+		System.out.println(clientShakeHandMessage);
 		try{
-			out.println(clientShakeHandMessage);
-			System.out.println(clientShakeHandMessage);
+			out.write(clientShakeHandMessage.getBytes("UTF-8"));
 			//TODO:set a time out
 			String result = in.readLine();
 			System.out.println(result);
-			if(result.equals(type+" "+"Server")){
+			if(result.equals("MIRO"+" "+"Server")){
 				return true;
 			}
 			
 		}catch (Exception e){
 			
+		}
+		return false;
+	}
+	public boolean HandleShankHandRequest(BufferedReader in,OutputStream out) throws IOException{
+		
+		String requestMessage = in.readLine();
+		String hello = "MIRO Server\r\n";
+		if(requestMessage.equals("MINET Client")){
+			out.write(hello.getBytes("UTF-8"));
+			return true;
 		}
 		return false;
 	}

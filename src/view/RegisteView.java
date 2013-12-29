@@ -1,9 +1,13 @@
+package view;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -44,18 +48,16 @@ public class RegisteView extends JFrame{
 		private JButton submitButton = new JButton("提交");
 		private JButton cancelButton = new JButton("取消");
 		
-		private static RegisteView registeViewInstance=null;
 		
-		public synchronized  static RegisteView getInstance(){
-			if (registeViewInstance == null){
-				registeViewInstance = new RegisteView();
-			}
-			return registeViewInstance;
-		}
+		
 		public RegisteView(){
 			initView();
 			setVisible(true);
-			
+			this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			this.userNameField.setText("demo");
+			this.passswordField.setText("12345");
+			this.confpswField.setText("12345");
+			this.emailField.setText("demo.@minet.com");
 		}
 		public void initView(){
 			this.setLayout(new FlowLayout());
@@ -109,7 +111,7 @@ public class RegisteView extends JFrame{
 							if( (new RegisterSocket()).register(userNameField.getText(), String.copyValueOf(passswordField.getPassword()),emailField.getText()) ){
 								HandleRegisterSuccess();
 							}
-						} catch (IOException e1) {
+						} catch (Exception e1) {
 							// TODO Auto-generated catch block
 							e1.printStackTrace();
 						}
@@ -136,12 +138,12 @@ public class RegisteView extends JFrame{
 			getContentPane().add(buttonGroup);
 		}
 		public void HandleRegisterSuccess(){
-			RegisteView.getInstance().setVisible(false);
-			LoginRegisterView.getInstance().setVisible(true);
+			this.setVisible(false);
+			(new LoginRegisterView(userNameField.getText())).setVisible(true);
 		}
 		public void HandleCancel(){
 			this.setVisible(false);
-			LoginRegisterView.getInstance().setVisible(true);
+			(new LoginRegisterView()).setVisible(true);
 		}
 		private boolean isInputValid(){
 			boolean flag = true;
@@ -175,18 +177,19 @@ public class RegisteView extends JFrame{
 		}
 		public class RegisterSocket extends Socket{
 			private BufferedReader in;
-			private PrintWriter out;
+			private OutputStream out;
 			private RegisterSocket registerSocket ;
-			public RegisterSocket() throws UnknownHostException, IOException{
+			public RegisterSocket() throws Exception{
 				super(DataModel.getInstance().getServerIP(),DataModel.getInstance().getServerPort());
 				registerSocket = this;
 				in = new BufferedReader(new InputStreamReader(registerSocket.getInputStream()));
-				out = new PrintWriter(registerSocket.getOutputStream(),true);
+				out = this.getOutputStream();
 				
 			}
 			private boolean register(String userName,String userPassword,String email){
 				try {
 					if(MessageManipulator.getInstance().shakeHand(in, out, "MINET")){
+						/*
 						HashMap<String,String> headRequest =new HashMap<String,String>();
 						HashMap<String,String> headline = new HashMap<String,String>();
 						HashMap<String,String> bodyline = new HashMap<String,String>();
@@ -203,7 +206,10 @@ public class RegisteView extends JFrame{
 						msgMap.put("body", bodyline);
 						String msg = MessageManipulator.getInstance().formatAMessage(msgMap);
 						out.println(msg);
-						//TODO:set a time to stop
+						*///TODO:set a time to stop
+						String msg = "REGISTER "+userName +" "+userPassword+" "+email+"\r\n"+"dfkajsldkfj\r\n";
+						out.write(msg.getBytes("UTF-8"));
+						System.out.println("dfasd");
 						return HandleResult();
 					}else{
 						//TODO:handle false;
@@ -216,21 +222,33 @@ public class RegisteView extends JFrame{
 			}
 			private boolean HandleResult(){
 				try {
+					/*
 					HashMap<String,HashMap<String,String> > msgMap =  MessageManipulator.getInstance().parseMessage(in);
 					String CSVersion = msgMap.get("requestline").get("0");
 					String MsgType = msgMap.get("requestline").get("1");
 					String registeState = msgMap.get("requestline").get("2");
 					String MsgDetail = msgMap.get("bodyline").get("Entity");
-					
 					if(registeState.equals("0")){
-						//TODO:process failed to login
+						JOptionPane.showMessageDialog(null, MsgDetail);
 					}
 					else{
 						in.close();
 						out.close();
 						registerSocket.close();
 						return true;
-					}
+					}*/
+					
+					/*String registeState = in.readLine();
+					registeState = new String(registeState.getBytes(), "utf-8");
+					System.out.println(registeState);
+					JOptionPane.showMessageDialog(null, registeState);
+					*/
+					
+					//DataInputStream inFromServer = new DataInputStream( registerSocket.getInputStream());
+					String registeState = in.readLine();
+					System.out.println(registeState);
+					JOptionPane.showMessageDialog(null, registeState);
+					
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

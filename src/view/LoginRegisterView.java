@@ -1,8 +1,12 @@
+package view;
+import java.awt.FlowLayout;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
@@ -11,9 +15,9 @@ import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.OutputStream;
 import java.net.*;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import networkManage.*;
 
@@ -27,64 +31,68 @@ public class LoginRegisterView extends JFrame{
 	private JLabel passwordlabel = new JLabel("密码");
 	private JTextField usernameField = null;
 	private JPasswordField pwdField = null;
-	
-	private JLabel userNameValidlabel = new JLabel("");
-	private JLabel passwordValidlabel = new JLabel("");
+	private Box b1,b2,b3;
+	private Box container;
+	private JLabel userNameValidlabel = new JLabel("",10);
+	private JLabel passwordValidlabel = new JLabel("",10);
 	
 	private JButton loginButton = null;
 	private JButton registerButton = null;
 	private JButton resetPasswordButton = null;
-	private static LoginRegisterView loginRegisterInstance= null;
-	private LoginRegisterView(){
+//	private static LoginRegisterView loginRegisterInstance= null;
+	private Socket loginSocket;
+	public LoginRegisterView(){
 		InitView();
 		loginRegisterView.setLocationRelativeTo(null);
 		loginRegisterView.setVisible(true);
+		loginRegisterView.addWindowListener(new WindowAdapter(){
+	     	 public void windowClosing(WindowEvent e){
+	     	   System.exit(0);	
+	     	 }
+	     });
+		usernameField.setText("demo");
+		pwdField.setText("12345");
+	}
+	public LoginRegisterView(String username){
+		InitView();
+		loginRegisterView.setLocationRelativeTo(null);
+		loginRegisterView.setVisible(true);
+		loginRegisterView.addWindowListener(new WindowAdapter(){
+	     	 public void windowClosing(WindowEvent e){
+	     	   System.exit(0);	
+	     	 }
+	     });
+		this.usernameField.setText(username);
 	}
 	
-	
+	/*
 	public synchronized  static  LoginRegisterView getInstance(){
 		if (loginRegisterInstance == null){
 			loginRegisterInstance = new LoginRegisterView();
 		}
 		return loginRegisterInstance;
 	}
+	*/
 	private void InitView(){
-		JPanel container = new JPanel();
-		//container.setSize(100, 100);
 		loginRegisterView = new JFrame();
-		JPanel userNamePanel = new JPanel();
-		userNamePanel.add(userNamelabel);
-		usernameField = new JTextField(15);
-		userNamePanel.add(usernameField);
-		userNameValidlabel.setVisible(false);
-		userNamePanel.add(userNameValidlabel);
-		container.add(userNamePanel);
-		//loginRegisterView.getContentPane().add(userNamePanel);
 		
-		JPanel passwordPanel = new JPanel();
-		passwordPanel.add(passwordlabel);
+		usernameField = new JTextField(15);
+		userNameValidlabel.setVisible(false);
+		
 		pwdField = new JPasswordField(15);
 		pwdField.setEchoChar('*');
-		passwordPanel.add(pwdField);
 		passwordValidlabel.setVisible(false);
-		passwordPanel.add(passwordValidlabel);
 		
-		resetPasswordButton = new JButton("密码重置");
+		resetPasswordButton = new JButton("修改密码");
 		resetPasswordButton.addActionListener(new ActionListener(){
-
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// TODO Auto-generated method stub
-				
+				loginRegisterView.setVisible(false);
+				(new RenewPasswordView()).setVisible(true);;
 			}
 			
 		});
-		
-		passwordPanel.add(resetPasswordButton);
-		container.add(passwordPanel);
-		//loginRegisterView.getContentPane().add(passwordPanel);
-		
-		JPanel buttonGroup = new JPanel();
 		registerButton = new JButton("注册");
 		registerButton.addActionListener(new ActionListener(){
 
@@ -95,9 +103,6 @@ public class LoginRegisterView extends JFrame{
 			}
 			
 		});
-		
-		buttonGroup.add(registerButton);
-		
 		loginButton = new JButton("登录");
 		loginButton.addActionListener(new ActionListener(){
 
@@ -111,13 +116,46 @@ public class LoginRegisterView extends JFrame{
 			}
 			
 		});
-		buttonGroup.add(loginButton);
-		container.add(buttonGroup);
+		
+		b1 = Box.createHorizontalBox();
+		b2 = Box.createHorizontalBox();
+		b3 = Box.createHorizontalBox();
+		container = Box.createVerticalBox();
+		b1.add(Box.createHorizontalStrut(10));
+		b2.add(Box.createHorizontalStrut(10));
+		b3.add(Box.createHorizontalStrut(10));
+		b1.add(Box.createHorizontalStrut(10));
+		b1.add(userNamelabel);
+		b1.add(Box.createHorizontalStrut(5));
+		b1.add(usernameField);
+		b1.add(userNameValidlabel);
+		
+		b2.add(Box.createHorizontalStrut(22));
+		b2.add(passwordlabel);
+		b2.add(Box.createHorizontalStrut(5));
+		b2.add(pwdField);
+		b2.add(Box.createHorizontalStrut(5));
+		b2.add(resetPasswordButton);
+		b2.add(passwordValidlabel);
+		
+		
+		b3.add(Box.createHorizontalStrut(25));
+		b3.add(loginButton);
+		b3.add(Box.createHorizontalStrut(20));
+		b3.add(registerButton);
+	
+		container.add(Box.createVerticalStrut(40));
+		container.add(b1);
+		container.add(Box.createVerticalStrut(40));
+		container.add(b2);
+		container.add(Box.createVerticalStrut(40));
+		container.add(b3);
+		
 		loginRegisterView.setTitle("登录");
-		loginRegisterView.setSize(400,300);
+		loginRegisterView.setSize(425,250);
 		loginRegisterView.setResizable(false);
+		loginRegisterView.setLayout(new FlowLayout());
 		loginRegisterView.getContentPane().add(container);
-		//loginRegisterView.getContentPane().add(buttonGroup);
 	}
 	private boolean inputValid(){
 		boolean flag = true;
@@ -137,14 +175,16 @@ public class LoginRegisterView extends JFrame{
 	}
 	private void HandleRegiste(){
 		loginRegisterView.setVisible(false);
-		RegisteView.getInstance().setVisible(true);
+		(new RegisteView()).setVisible(true);
 	}
 	private void HandleLogin(){
 		//TODO:LoginView
 		try {
+			
 			if((new LoginSocket()).login(usernameField.getText(), String.valueOf(pwdField.getPassword()) ) ){
 				loginRegisterView.setVisible(false);
-				(new ChatRoomView()).setVisible(true);;
+				(new ChatRoomView(loginSocket)).setVisible(true);
+				
 			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -153,46 +193,48 @@ public class LoginRegisterView extends JFrame{
 	}
 	
 	public class LoginSocket extends Socket{
-		private Socket loginSocket;
-		private P2PDetectSocket p2pDetectSocket;
+		
 		private BufferedReader in;
-		private PrintWriter out;
+		private OutputStream out;
 		private int P2PDetectPort = -1;
 		
-		public LoginSocket()throws Exception{
-			super(DataModel.getInstance().getServerIP(),DataModel.getInstance().getServerPort());
-			loginSocket = this;
-			loginSocket.setSoTimeout(6000);
-			in = new BufferedReader(new InputStreamReader(loginSocket.getInputStream()));
-			out = new PrintWriter(loginSocket.getOutputStream(),true);
+		public LoginSocket() throws Exception{
+				super(DataModel.getInstance().getServerIP(),DataModel.getInstance().getServerPort());
+				loginSocket = this;
+				loginSocket.setSoTimeout(10000);
+				in = new BufferedReader(new InputStreamReader(loginSocket.getInputStream()));
+				out = loginSocket.getOutputStream();
 		}
 		public boolean login(String userName,String password) throws Exception{
 			try {
 				if(MessageManipulator.getInstance().shakeHand(in,out,"MINET")){
+					P2PDetectPort = DataModel.getInstance().getp2pAcceptPort();
 					if( P2PDetectPort ==-1){
 						return false;
 					}
-					HashMap<String,String> headRequest =new HashMap<String,String>();
-					HashMap<String,String> headline = new HashMap<String,String>();
-					HashMap<String,String> bodyline = new HashMap<String,String>();
+					LinkedHashMap<String,String> headRequest =new LinkedHashMap<String,String>();
+					LinkedHashMap<String,String> headline = new LinkedHashMap<String,String>();
+					LinkedHashMap<String,String> bodyline = new LinkedHashMap<String,String>();
+					
 					headRequest.put("CSVersion", "CS1.0");
 					headRequest.put("MessageType","LOGIN");
 					headRequest.put("UserName",userName);
-					p2pDetectSocket =new P2PDetectSocket();
 					headline.put("Password", password);
 					headline.put("Port",String.valueOf(P2PDetectPort));
 					headline.put("Content-length", "0");
 					headline.put("Time", (new java.util.Date()).toString());
 					
-					HashMap<String,HashMap<String,String> > msgMap = new HashMap<String,HashMap<String,String> >();
+					LinkedHashMap<String,LinkedHashMap<String,String> > msgMap = new LinkedHashMap<String,LinkedHashMap<String,String> >();
 					msgMap.put("requestline", headRequest);
 					msgMap.put("headline", headline);
 					msgMap.put("body", bodyline);
 					String msg = MessageManipulator.getInstance().formatAMessage(msgMap);
-					out.println(msg);
+					
+					out.write(msg.getBytes("UTF-8") );
+					
 					//TODO: SET TIMET to live
 					if (HandleLogin()){
-						DataModel.getInstance().setUserName(userName);
+						DataModel.getInstance().initUserInfo(userName,P2PDetectPort);
 						return true;
 					};
 					return false;
@@ -201,16 +243,12 @@ public class LoginRegisterView extends JFrame{
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}finally{
-				in.close();
-				out.close();
-				loginSocket.close();
 			}
 			return false;
 		}
 		private boolean HandleLogin(){
 			try {
-				HashMap<String,HashMap<String,String> > msgMap =  MessageManipulator.getInstance().parseMessage(in);
+				LinkedHashMap<String,LinkedHashMap<String,String> > msgMap =  MessageManipulator.getInstance().parseMessage(in);
 				String CSVersiont = msgMap.get("requestline").get("0");
 				String MsgType = msgMap.get("requestline").get("1");
 				String loginState = msgMap.get("requestline").get("2");
@@ -218,12 +256,9 @@ public class LoginRegisterView extends JFrame{
 				
 				if(loginState.equals("0")){
 					//TODO:process failed to login
+					JOptionPane.showMessageDialog(null, MsgDetail);
 				}
 				else{
-					in.close();
-					out.close();
-					loginSocket.close();
-					
 					return true;
 				}
 			} catch (IOException e) {
@@ -234,12 +269,13 @@ public class LoginRegisterView extends JFrame{
 			return false;
 		}
 		
-		
+		/*
 		public class P2PDetectSocket extends ServerSocket{
 			public P2PDetectSocket()throws Exception{
 				super(DataModel.getInstance().getp2pAcceptPort());
 				P2PDetectPort = this.getLocalPort();
 			}
 		}
+		*/
 	}
 }

@@ -1,18 +1,22 @@
+package view;
 
 
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import javax.swing.*;
+
 import networkManage.*;
 
 public class ChatRoomView extends MouseAdapter {
@@ -24,32 +28,51 @@ public class ChatRoomView extends MouseAdapter {
 	private JList<String> onlinelist = null;
 	private JList<String> chatMessagelist = null;
 	private ChatMessageModel chatMessageModel = null;
-	JButton submitButton = null;
-	JTextArea messageTosend = new JTextArea(4,20);
-	//private static ChatRoomView chatroomviewInstance = null;
-	private  ChatRoomSocket chatRoomManager = null;
-	/*
-	public   ChatRoomView getInstance(){
-		if(chatroomviewInstance ==null){
-			try {
-				chatroomviewInstance = new ChatRoomView();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-		}
-		return chatroomviewInstance;
-	}
-	*/
-	public ChatRoomView() throws UnknownHostException, IOException{
+	private JButton submitButton = null;
+	private JTextArea messageTosend = new JTextArea(4,20);
+	
+	private  ChatRoomManage chatRoomManager = null;
+	private Socket socket;
+	private BufferedReader in;
+	private OutputStream outCS;
+	
+	public ChatRoomView(Socket sk){
 		initChatRoom();
-		chatRoomManager = new ChatRoomSocket();
-		setVisible(true);
+		socket = sk;
+		try {
+			in = new BufferedReader(new InputStreamReader(socket.getInputStream(),"UTF-8"));
+			outCS = sk.getOutputStream();
+			try {
+				chatRoomManager = new ChatRoomManage();
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			setVisible(true);
+			System.out.println("You join the chatroom");
+			chatRoom.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		chatRoom.addWindowListener(new WindowAdapter(){
+	     	 public void windowClosing(WindowEvent e){
+	     	   System.out.println("You leave the chatroom");
+	     	   try {
+				chatRoomManager.HandleLogout();
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+	     	   System.exit(0);	
+	     	 }
+	     });
 	}
+
 	public void setVisible(boolean label){
 		chatRoom.setVisible(label);
 	}
+	
 	public void initChatRoom(){
 		chatRoom.setLocationRelativeTo(null);
 		chatRoom.setSize(500,400);
@@ -58,7 +81,6 @@ public class ChatRoomView extends MouseAdapter {
 		initOnlineUserArea();
 		chatRoom.getContentPane().add(chatArea,BorderLayout.CENTER);
 		chatRoom.getContentPane().add(onlineUserArea,BorderLayout.EAST);
-		
 		chatRoom.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); 
 	}
 	public void initMessageArea(){
@@ -67,7 +89,6 @@ public class ChatRoomView extends MouseAdapter {
 		chatMessagelist = new JList<String>(chatMessageModel);
 		
 		chatArea.add(new JScrollPane(chatMessagelist),BorderLayout.NORTH);
-		
 		
 		messageTosend.setLineWrap(true);
 		messageTosend.setAutoscrolls(true);
@@ -96,8 +117,12 @@ public class ChatRoomView extends MouseAdapter {
 		if (e.getSource() == onlinelist) {
 			if (e.getClickCount() == 2) {
 				index = onlinelist.locationToIndex(e.getPoint());
-				String tmp = (String) onlineUserModel.getElementAt(index);
-				JOptionPane.showMessageDialog(null,tmp);
+				try {
+				//	new P2PAskSocket(DataModel.getInstance().getOnlineUser(index));
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 			}
 		}
 		else if (e.getSource() == submitButton) {
@@ -114,102 +139,170 @@ public class ChatRoomView extends MouseAdapter {
 		}
 		
 	}
-	
-	public class ChatRoomSocket extends Socket{
-		private ChatRoomSocket chatRoomSocket=null;
-		private BufferedReader in;
-		private PrintWriter out;
-		
-		public ChatRoomSocket() throws UnknownHostException, IOException{
-			super(DataModel.getInstance().getServerIP(),DataModel.getInstance().getServerPort());
-			chatRoomSocket = this;
-			in = new BufferedReader(new InputStreamReader(chatRoomSocket.getInputStream()));
-			out = new PrintWriter(chatRoomSocket.getOutputStream(),true);
-			for(int i=0;i<3;i++){
-				if(MessageManipulator.getInstance().shakeHand(in, out, "MINET")){
-					new GetChatRoomMessageThread();
-					new SendBeatMessageThread();
-					break;
-				}
-			}
-			
+	/*
+	public class P2PAskSocket extends Socket{
+		Socket p2psocket;
+		BufferedReader in;
+		OutputStream out;
+		public P2PAskSocket(ArrayList<String> oneUser) throws Exception{
+			String username = oneUser.get(0);
+			String ipAddr = oneUser.get(1);
+			int port = Integer.valueOf(oneUser.get(2));
+			p2psocket = new Socket(ipAddr,port);
+			p2psocket.setSoTimeout(600000);
+			in = new BufferedReader(new InputStreamReader(socket.getInputStream(),"UTF-8"));
+			out = p2psocket.getOutputStream();
+			sendAskMessage(username);
 		}
-		public void closeSocket(){
-				try {
-					in.close();
-					out.close();
-					chatRoomSocket.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+		public void sendAskMessage(String username) throws Exception{
+			try {
+				MessageManipulator.getInstance().shakeHand(in, out, "MINET");
+				LinkedHashMap<String,String> headRequest =new LinkedHashMap<String,String>();
+				LinkedHashMap<String,String> headline = new LinkedHashMap<String,String>();
+				LinkedHashMap<String,String> bodyline = new LinkedHashMap<String,String>();
+				headRequest.put("P2PVersion", "P2P1.0");
+				headRequest.put("MessageType","P2PREQUEST");
+				headRequest.put("UserName",DataModel.getInstance().getUserName());
+				headline.put("Content-length", "0");
+				headline.put("Time", (new java.util.Date()).toString());
+				LinkedHashMap<String,LinkedHashMap<String,String> > msgMap = new LinkedHashMap<String,LinkedHashMap<String,String> >();
+				msgMap.put("requestline", headRequest);
+				msgMap.put("headline", headline);
+				msgMap.put("body", bodyline);
+				String responseMsg = MessageManipulator.getInstance().formatAMessage(msgMap);
+				out.write(responseMsg.getBytes("UTF-8"));
+				if(HandleResult()){
+					(new P2PChatView(socket)).setTitle(username);
+					
 				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				JOptionPane.showMessageDialog(null, "Failed to connect");
+			}
+		}
+		public boolean HandleResult() {
+			JOptionPane.showMessageDialog(null, "Connecting...");
+			try {
+				if( (in.readLine()).length() >0 ){
+					return true;
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				JOptionPane.showMessageDialog(null, "Failed to connect");
+				return false;
 				
+			}
+				
+			return false;
+		}
+	}
+	*/
+	public class ChatRoomManage{
+		
+		public ChatRoomManage() throws Exception{
+			new GetChatRoomMessageThread();
+			new SendBeatMessageThread();
+			getOnlineList();
 			
 		}
 		
 		public void getOnlineList(){
 			try{
-				HashMap<String,String> headRequest =new HashMap<String,String>();
-				HashMap<String,String> headline = new HashMap<String,String>();
-				HashMap<String,String> bodyline = new HashMap<String,String>();
+				LinkedHashMap<String,String> headRequest =new LinkedHashMap<String,String>();
+				LinkedHashMap<String,String> headline = new LinkedHashMap<String,String>();
+				LinkedHashMap<String,String> bodyline = new LinkedHashMap<String,String>();
 				headRequest.put("CSVersion", "CS1.0");
 				headRequest.put("MessageType","GETLIST");
-				
 				headline.put("Content-length", "0");
 				headline.put("Time", (new java.util.Date()).toString());
-				HashMap<String,HashMap<String,String> > msgMap = new HashMap<String,HashMap<String,String> >();
+				LinkedHashMap<String,LinkedHashMap<String,String> > msgMap = new LinkedHashMap<String,LinkedHashMap<String,String> >();
 				msgMap.put("requestline", headRequest);
 				msgMap.put("headline", headline);
 				msgMap.put("body", bodyline);
 				String msg = MessageManipulator.getInstance().formatAMessage(msgMap);
-				out.println(msg);
-			}catch (Exception e){
+				outCS.write(msg.getBytes("UTF-8"));
 				
+			}catch (Exception e){
+				e.printStackTrace();
 			}
 		}
 		public boolean SendCSMessage(String msgTosend){
 			try{
-				HashMap<String,String> headRequest =new HashMap<String,String>();
-				HashMap<String,String> headline = new HashMap<String,String>();
-				HashMap<String,String> bodyline = new HashMap<String,String>();
+				msgTosend.replace("\r", "");
+				msgTosend.replace("\n", "");
+				if(msgTosend.length() ==0){
+					return false;
+				}
+				
+				LinkedHashMap<String,String> headRequest =new LinkedHashMap<String,String>();
+				LinkedHashMap<String,String> headline = new LinkedHashMap<String,String>();
+				LinkedHashMap<String,String> bodyline = new LinkedHashMap<String,String>();
 				headRequest.put("CSVersion", "CS1.0");
 				headRequest.put("MessageType","MESSAGE");
 				headRequest.put("UserName",DataModel.getInstance().getUserName());
 				headline.put("Content-length", String.valueOf(msgTosend.length()) );
 				headline.put("Time", (new java.util.Date()).toString());
 				bodyline.put("bodyline", msgTosend);
-				HashMap<String,HashMap<String,String> > msgMap = new HashMap<String,HashMap<String,String> >();
+				LinkedHashMap<String,LinkedHashMap<String,String> > msgMap = new LinkedHashMap<String,LinkedHashMap<String,String> >();
 				msgMap.put("requestline", headRequest);
 				msgMap.put("headline", headline);
 				msgMap.put("body", bodyline);
 				String msg = MessageManipulator.getInstance().formatAMessage(msgMap);
-				out.println(msg);
+				outCS.write(msg.getBytes("UTF-8"));
+				
+				return true;
 			}catch (Exception e){
 				
 			}
 			return false;
 		}
+		public void HandleLogout() throws Exception{
+			try{
+				LinkedHashMap<String,String> headRequest =new LinkedHashMap<String,String>();
+				LinkedHashMap<String,String> headline = new LinkedHashMap<String,String>();
+				LinkedHashMap<String,String> bodyline = new LinkedHashMap<String,String>();
+				headRequest.put("CSVersion", "CS1.0");
+				headRequest.put("MessageType","LEAVE");
+				headRequest.put("UserName",DataModel.getInstance().getUserName());
+				headline.put("Content-length", "0");
+				headline.put("Time", (new java.util.Date()).toString());
+				LinkedHashMap<String,LinkedHashMap<String,String> > msgMap = new LinkedHashMap<String,LinkedHashMap<String,String> >();
+				msgMap.put("requestline", headRequest);
+				msgMap.put("headline", headline);
+				msgMap.put("body", bodyline);
+				String msg = MessageManipulator.getInstance().formatAMessage(msgMap);
+				outCS.write(msg.getBytes("UTF-8"));
+				
+			}catch (IOException e){
+				e.printStackTrace();
+			}
+		}
+		
 		class SendBeatMessageThread extends Thread{
 			public SendBeatMessageThread(){
-				}
+				    start();
+			}
 			public void run(){
 				try{
-					while(true){
-						HashMap<String,String> headRequest =new HashMap<String,String>();
-						HashMap<String,String> headline = new HashMap<String,String>();
-						HashMap<String,String> bodyline = new HashMap<String,String>();
+					while(true){;
+						sleep(10000);
+						LinkedHashMap<String,String> headRequest =new LinkedHashMap<String,String>();
+						LinkedHashMap<String,String> headline = new LinkedHashMap<String,String>();
+						LinkedHashMap<String,String> bodyline = new LinkedHashMap<String,String>();
 						headRequest.put("CSVersion", "CS1.0");
 						headRequest.put("MessageType","BEAT");
 						headRequest.put("UserName",DataModel.getInstance().getUserName());
 						headline.put("Content-length", "0");
 						headline.put("Time", (new java.util.Date()).toString());
-						HashMap<String,HashMap<String,String> > msgMap = new HashMap<String,HashMap<String,String> >();
+						LinkedHashMap<String,LinkedHashMap<String,String> > msgMap = new LinkedHashMap<String,LinkedHashMap<String,String> >();
 						msgMap.put("requestline", headRequest);
 						msgMap.put("headline", headline);
 						msgMap.put("body", bodyline);
 						String msg = MessageManipulator.getInstance().formatAMessage(msgMap);
-						out.println(msg);
-						sleep(10000);
+						
+						outCS.write(msg.getBytes("UTF-8"));						
 					}
 				}catch (Exception e){
 					
@@ -223,7 +316,6 @@ public class ChatRoomView extends MouseAdapter {
 			
 			public GetChatRoomMessageThread(){
 				try{
-					buff = new BufferedReader(new InputStreamReader(chatRoomSocket.getInputStream()));
 					start();
 				}catch (Exception e){
 					
@@ -233,7 +325,7 @@ public class ChatRoomView extends MouseAdapter {
 			public void run(){
 					try{
 						while(true){
-							HashMap<String,String> headrequest = MessageManipulator.getInstance().getHeadRequest(in);
+							LinkedHashMap<String,String> headrequest = MessageManipulator.getInstance().getHeadRequest(in);
 							String CSVersion = headrequest.get("0");
 							String MsgType = headrequest.get("1");
 							String usernameorstatus = headrequest.get("2");
@@ -255,30 +347,34 @@ public class ChatRoomView extends MouseAdapter {
 			}
 			public void HandleCSMessage(String username) throws IOException{
 				String msgCell = "";
-				HashMap<String,String> headline = MessageManipulator.getInstance().getHeadLine(in);
-				HashMap<String,String> bodyline = MessageManipulator.getInstance().getEntityMessage(in);
+				LinkedHashMap<String,String> headline = MessageManipulator.getInstance().getHeadLine(in);
+				LinkedHashMap<String,String> bodyline = MessageManipulator.getInstance().getEntityMessage(in);
 				
-				String time = headline.get("Time");
+				String time = headline.get("Date");
 				String msgDetail = bodyline.get("Entity");
-				
+				System.out.println(username);
 				if(true){
-					msgCell += username+"\n";
+					msgCell += username+":";
 					msgCell += time +"\n";
 					msgCell += msgDetail;
 				}
 				chatMessageModel.addElement(msgCell);
 			}
-			public void HandleOnlineUsersInit() throws IOException{
+			public void HandleOnlineUsersInit() throws Exception{
 				
-				HashMap<String,String> headline = MessageManipulator.getInstance().getHeadLine(in);
-				HashMap<String,String> bodyline = MessageManipulator.getInstance().getEntityMessage(in);
+				LinkedHashMap<String,String> headline = MessageManipulator.getInstance().getHeadLine(in);
+				LinkedHashMap<String,String> bodyline = MessageManipulator.getInstance().getEntityMessage(in);
 				
 				String content_length = headline.get("Content-Length");
 				String time = headline.get("Time");
 				String msgDetail = bodyline.get("Entity");
 				String[] userlist = msgDetail.split("\n");
+				
 				DataModel.getInstance().resetOnlineUsers();
+				
+				
 				onlineUserModel.resetOnlineUser();
+				
 				for(int i=0;i<userlist.length;i++){
 					String[] oneUser = userlist[i].split(" ");
 					ArrayList<String> aUser= new ArrayList<String>();
@@ -289,27 +385,27 @@ public class ChatRoomView extends MouseAdapter {
 					onlineUserModel.addElement(oneUser[0]);
 				}
 			}
-			public void HandleOnlineUsersUpdate(String status,String username) throws IOException{
-				HashMap<String,String> headline = MessageManipulator.getInstance().getHeadLine(in);
-				HashMap<String,String> bodyline = MessageManipulator.getInstance().getEntityMessage(in);
+			public void HandleOnlineUsersUpdate(String status,String username) throws Exception{
+				LinkedHashMap<String,String> headline = MessageManipulator.getInstance().getHeadLine(in);
+				LinkedHashMap<String,String> bodyline = MessageManipulator.getInstance().getEntityMessage(in);
 				
 				String userip = headline.get("IPAddr");
 				String port = headline.get("Port");
 				String time = headline.get("Time");
-
+				
 				String msgDetail = bodyline.get("Entity");
 				//0 for logout
 				if(status.equals("0")){
 					if(onlineUserModel.contains(username) ){
 						int index = onlineUserModel.indexOf(username);
 						onlineUserModel.removeElement(username);
-						chatMessageModel.addElement("Server:"+username+"Log out");
+						chatMessageModel.addElement("Server: "+username+" Log out");
 						DataModel.getInstance().removeOnlineUsers(index);
 					}
 				}else if(status.equals("1")){
 					if(!onlineUserModel.contains(username) ){
 						onlineUserModel.addElement(username);
-						chatMessageModel.addElement("Server:"+username+"Log In");
+						chatMessageModel.addElement("Server: "+username+" Log In");
 						ArrayList<String> aUser= new ArrayList<String>();
 						aUser.add(username);
 						aUser.add(userip);
@@ -359,14 +455,10 @@ public class ChatRoomView extends MouseAdapter {
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
-		String[] s = {"美国", " 日本", "大陆", "英国", "法国", "意大利", "美国", " 日本", "大陆", "英国", "法国", "意大利", "澳洲", "韩国" };
-	
 		public OnlineUserModel() {
-			for (int i = 0; i < s.length; i++)
-				addElement((i + 1) + "." + s[i]);
 		}
 		public void resetOnlineUser(){
-			this.clear();
+			this.removeAllElements();
 		}
 	}
 }
