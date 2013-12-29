@@ -9,11 +9,16 @@ import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
-import java.sql.Date;
 import java.sql.Time;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.Date;
+import java.util.TimerTask;
 
 import javax.security.auth.callback.LanguageCallback;
 import javax.swing.DefaultListModel;
@@ -29,8 +34,8 @@ import javax.swing.ListCellRenderer;
 
 import networkManage.DataModel;
 import networkManage.MessageManipulator;
-import view.ChatRoomView.ChatMessageModel;
-import view.ChatRoomView.OnlineUserModel;
+
+
 
 public class P2PChatView extends JFrame{
 	
@@ -43,17 +48,19 @@ public class P2PChatView extends JFrame{
 	private long LastBeatTime = 0;
 	private P2PChatView self=null;
 	private JButton filetransButton = null;
-	public P2PChatView(Socket st){
+	private String uname = "";
+	public P2PChatView(Socket st) throws Exception{
 		socket = st;
 		initUserInterface();
 		self = this;
 		self.setVisible(true);
+		uname = DataModel.getInstance().getUserName();
 		self.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		self.addWindowListener(new WindowAdapter(){
 	     	 public void windowClosing(WindowEvent e){
-		     	   System.out.println("You leave the chatroom");
+		     	   System.out.println("You join P2P chatroom");
 		     	   try {
-					HandleLogout();
+		     		  sendleavemessage();
 				} catch (Exception e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -64,16 +71,16 @@ public class P2PChatView extends JFrame{
 	
 	public void initUserInterface(){
 		this.setLocationRelativeTo(null);
-		this.setSize(500,400);
+		this.setSize(700,400);
 		this.setResizable(true);
 		initMessageArea();
-		initFreTransforArea();
+		initFileTransforArea();
 		LastBeatTime = java.lang.System.currentTimeMillis();
 		new GetP2PMessageThread();
 		new SendBeatMessageThread();
 		new HandleBeatThread();
 	}
-	public void initFreTransforArea(){
+	public void initFileTransforArea(){
 		filetransButton = new JButton("文件传输");
 		filetransButton.addActionListener(new ActionListener() {
 			
@@ -90,6 +97,45 @@ public class P2PChatView extends JFrame{
 			// TODO Auto-generated constructor stub
 		}
 	}
+	public void sendmessage(String data) throws UnsupportedEncodingException, IOException {
+		String string = "P2P1.0 " + "P2PMESSAGE " + uname + "\r\n";
+		string += "Date " + getTime() + "\r\n";
+		string += "Content-Type " +"text/html; charset=ISO-8859-1\r\n\r\n";
+		string += data + "\r\n";
+		socket.getOutputStream().write(string.getBytes("utf-8"));
+	}
+	
+	public void sendleavemessage() throws UnsupportedEncodingException, IOException {
+		String string = "P2P1.0 " + "LEAVE " + uname + "\r\n";
+		string += "Date " + getTime() + "\r\n";
+		string += "\r\n\r\n";
+		socket.getOutputStream().write(string.getBytes("utf-8"));
+	}
+	public static String getTime() {
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date date = new Date();
+		String nowDate = format.format(date);
+		return nowDate;
+	}
+	public class Beat extends TimerTask{
+
+		@Override
+		public void run() {
+			String string = "P2P1.0 " + "BEAT " + uname + "\r\n";
+			string += "Date " + getTime() + "\r\n";
+			string += "\r\n\r\n";
+			try {
+				socket.getOutputStream().write(string.getBytes("utf-8"));
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+
+	/*
 	public void SendP2PMessage(String message) throws Exception{
 		try{
 			LinkedHashMap<String,String> headRequest =new LinkedHashMap<String,String>();
@@ -112,6 +158,8 @@ public class P2PChatView extends JFrame{
 			e.printStackTrace();
 		}
 	}
+	*/
+	/*
 	public void HandleLogout() throws Exception{
 		try{
 			LinkedHashMap<String,String> headRequest =new LinkedHashMap<String,String>();
@@ -133,13 +181,17 @@ public class P2PChatView extends JFrame{
 			e.printStackTrace();
 		}
 	}
+	*/
 	class SendBeatMessageThread extends Thread{
 		public SendBeatMessageThread(){
 			    start();
 		}
 		public void run(){
 			try{
-				while(true){;
+				while(true){
+					Timer timer = new Timer();
+					timer.schedule(new Beat(), 0, 10000);
+					/*
 					sleep(10000);
 					LinkedHashMap<String,String> headRequest =new LinkedHashMap<String,String>();
 					LinkedHashMap<String,String> headline = new LinkedHashMap<String,String>();
@@ -155,7 +207,7 @@ public class P2PChatView extends JFrame{
 					msgMap.put("body", bodyline);
 					//String msg = MessageManipulator.getInstance().formatAMessage(msgMap);
 					//out.write(msg.getBytes("UTF-8"));
-					
+					*/
 				}
 			}catch (Exception e){
 				
@@ -164,17 +216,16 @@ public class P2PChatView extends JFrame{
 		
 		}
 	}
-	
 	public void initMessageArea(){
-		chatArea.setLayout(new BorderLayout());
+		//chatArea.setLayout(new BorderLayout());
 		chatMessageModel = new ChatMessageModel();
 		chatMessagelist = new JList<String>(chatMessageModel);
-		chatArea.add(new JScrollPane(chatMessagelist),BorderLayout.NORTH);
+		chatArea.add(new JScrollPane(chatMessagelist));
 		messageTosend.setLineWrap(true);
 		messageTosend.setAutoscrolls(true);
 		messageTosend.setRows(4);
-
-		chatArea.add(messageTosend,BorderLayout.CENTER);
+		
+		chatArea.add(messageTosend);
 		submitButton = new JButton();
 		submitButton.setText("发送");
 		submitButton.setSize(5, 10);
@@ -184,7 +235,7 @@ public class P2PChatView extends JFrame{
 				// TODO Auto-generated method stub
 				if(messageTosend.getText().length() !=0){
 					try {
-						SendP2PMessage(messageTosend.getText());
+						sendmessage(messageTosend.getText());
 					} catch (Exception e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
@@ -193,8 +244,8 @@ public class P2PChatView extends JFrame{
 			}
 			
 		});
-		chatArea.add(submitButton,BorderLayout.SOUTH);
-		
+		chatArea.add(submitButton);
+		this.setResizable(true);
 	}
 	class HandleBeatThread extends Thread{
 		public HandleBeatThread(){
@@ -248,6 +299,7 @@ public class P2PChatView extends JFrame{
 								self.setVisible(false);
 							}
 						}
+						
 					}
 					
 				}catch (Exception e){

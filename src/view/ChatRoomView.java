@@ -1,6 +1,7 @@
 package view;
 
-
+import java.util.Timer;
+import java.util.TimerTask;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -36,7 +37,7 @@ public class ChatRoomView extends MouseAdapter {
 	private BufferedReader in;
 	private OutputStream outCS;
 	
-	public ChatRoomView(Socket sk){
+	public ChatRoomView(Socket sk) throws Exception{
 		initChatRoom();
 		socket = sk;
 		try {
@@ -67,6 +68,7 @@ public class ChatRoomView extends MouseAdapter {
 	     	   System.exit(0);	
 	     	 }
 	     });
+
 	}
 
 	public void setVisible(boolean label){
@@ -118,7 +120,9 @@ public class ChatRoomView extends MouseAdapter {
 			if (e.getClickCount() == 2) {
 				index = onlinelist.locationToIndex(e.getPoint());
 				try {
-				//	new P2PAskSocket(DataModel.getInstance().getOnlineUser(index));
+					ArrayList<String> oneUser = DataModel.getInstance().getOnlineUser(index);
+					new P2PChatRequest(oneUser.get(1), oneUser.get(2), oneUser.get(0));
+					//new P2PAskSocket(DataModel.getInstance().getOnlineUser(index));
 				} catch (Exception e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -141,22 +145,43 @@ public class ChatRoomView extends MouseAdapter {
 	}
 	/*
 	public class P2PAskSocket extends Socket{
-		Socket p2psocket;
-		BufferedReader in;
-		OutputStream out;
+		private Socket p2psocket;
+		private BufferedReader in;
+		private OutputStream out;
+		private boolean flag = false;
 		public P2PAskSocket(ArrayList<String> oneUser) throws Exception{
 			String username = oneUser.get(0);
 			String ipAddr = oneUser.get(1);
 			int port = Integer.valueOf(oneUser.get(2));
+			System.out.println(ipAddr);
+			System.out.println(port);
 			p2psocket = new Socket(ipAddr,port);
-			p2psocket.setSoTimeout(600000);
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream(),"UTF-8"));
 			out = p2psocket.getOutputStream();
 			sendAskMessage(username);
 		}
+		public void TimOutCount(){
+	        Timer timer  = new Timer();
+	        timer.schedule(new TimerTask() {
+
+	            @Override
+	            public void run() {
+	            	try {
+	            		if(flag ==false){
+	            			p2psocket.close();
+	            		}
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+	            }
+	        }, 30000);
+	    }
 		public void sendAskMessage(String username) throws Exception{
 			try {
-				MessageManipulator.getInstance().shakeHand(in, out, "MINET");
+				if(!MessageManipulator.getInstance().shakeHand(in, out, "MINET")){
+					return ;
+				}
 				LinkedHashMap<String,String> headRequest =new LinkedHashMap<String,String>();
 				LinkedHashMap<String,String> headline = new LinkedHashMap<String,String>();
 				LinkedHashMap<String,String> bodyline = new LinkedHashMap<String,String>();
@@ -173,7 +198,6 @@ public class ChatRoomView extends MouseAdapter {
 				out.write(responseMsg.getBytes("UTF-8"));
 				if(HandleResult()){
 					(new P2PChatView(socket)).setTitle(username);
-					
 				}
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -184,7 +208,9 @@ public class ChatRoomView extends MouseAdapter {
 		public boolean HandleResult() {
 			JOptionPane.showMessageDialog(null, "Connecting...");
 			try {
-				if( (in.readLine()).length() >0 ){
+				TimOutCount();
+				if(MessageManipulator.getInstance().parseMessage(in) != null){
+					flag =true;
 					return true;
 				}
 			} catch (IOException e) {
@@ -197,6 +223,7 @@ public class ChatRoomView extends MouseAdapter {
 				
 			return false;
 		}
+		
 	}
 	*/
 	public class ChatRoomManage{
@@ -374,11 +401,10 @@ public class ChatRoomView extends MouseAdapter {
 				String time = headline.get("Time");
 				String msgDetail = bodyline.get("Entity");
 				String[] userlist = msgDetail.split("\n");
-				
+				System.out.println(msgDetail);
 				DataModel.getInstance().resetOnlineUsers();
-				
-				
 				onlineUserModel.resetOnlineUser();
+				
 				
 				for(int i=0;i<userlist.length;i++){
 					String[] oneUser = userlist[i].split(" ");

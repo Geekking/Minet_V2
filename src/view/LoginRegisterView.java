@@ -41,7 +41,23 @@ public class LoginRegisterView extends JFrame{
 	private JButton resetPasswordButton = null;
 //	private static LoginRegisterView loginRegisterInstance= null;
 	private Socket loginSocket;
-	public LoginRegisterView(){
+	private int P2PDetectPort = -1;
+	public LoginRegisterView(int detectPort) throws Exception{
+		InitView();
+		System.out.print(detectPort);
+		P2PDetectPort = detectPort;
+		loginRegisterView.setLocationRelativeTo(null);
+		loginRegisterView.setVisible(true);
+		loginRegisterView.addWindowListener(new WindowAdapter(){
+	     	 public void windowClosing(WindowEvent e){
+	     	   System.exit(0);	
+	     	 }
+	     });
+		usernameField.setText("demo");
+		pwdField.setText("12345");
+		
+	}
+	public LoginRegisterView() throws Exception{
 		InitView();
 		loginRegisterView.setLocationRelativeTo(null);
 		loginRegisterView.setVisible(true);
@@ -52,8 +68,9 @@ public class LoginRegisterView extends JFrame{
 	     });
 		usernameField.setText("demo");
 		pwdField.setText("12345");
+		
 	}
-	public LoginRegisterView(String username){
+	public LoginRegisterView(String username) throws Exception{
 		InitView();
 		loginRegisterView.setLocationRelativeTo(null);
 		loginRegisterView.setVisible(true);
@@ -196,7 +213,7 @@ public class LoginRegisterView extends JFrame{
 		
 		private BufferedReader in;
 		private OutputStream out;
-		private int P2PDetectPort = -1;
+
 		
 		public LoginSocket() throws Exception{
 				super(DataModel.getInstance().getServerIP(),DataModel.getInstance().getServerPort());
@@ -207,8 +224,8 @@ public class LoginRegisterView extends JFrame{
 		public boolean login(String userName,String password) throws Exception{
 			try {
 				if(MessageManipulator.getInstance().shakeHand(in,out,"MINET")){
-					P2PDetectPort = DataModel.getInstance().getp2pAcceptPort();
 					if( P2PDetectPort ==-1){
+						
 						return false;
 					}
 					LinkedHashMap<String,String> headRequest =new LinkedHashMap<String,String>();
@@ -233,7 +250,7 @@ public class LoginRegisterView extends JFrame{
 					
 					//TODO: SET TIMET to live
 					if (HandleLogin()){
-						DataModel.getInstance().initUserInfo(userName,P2PDetectPort);
+						DataModel.getInstance().setUserName(userName);
 						return true;
 					};
 					return false;

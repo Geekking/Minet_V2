@@ -1,80 +1,105 @@
 package view;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.LinkedHashMap;
+import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
 import networkManage.DataModel;
 import networkManage.MessageManipulator;
 
-import org.omg.CORBA.PUBLIC_MEMBER;
 
 public class P2PChatRequest {
-	BufferedReader in;
-	OutputStream out;
-	Socket st;
-	public P2PChatRequest(Socket socket) throws Exception{
-		in = new BufferedReader(new InputStreamReader(socket.getInputStream(),"UTF-8"));
-		out= socket.getOutputStream();
-		st = socket;
-		if(MessageManipulator.getInstance().HandleShankHandRequest(in, out)){
-			HandleRequest();
+	public static final String P2PChatRequest = null;
+	private String ipaddr;
+	private String port;
+	static Socket newsocket;
+	static String uname;
+	private BufferedReader in=null;
+	private boolean hasResponsed =false;
+	public P2PChatRequest(String ipaddr, String port, String un) throws Exception {
+		this.ipaddr = ipaddr;
+		this.port = port;
+		this.uname = un;
+		newsocket = new Socket(ipaddr,Integer.valueOf(port));
+		in = new BufferedReader(new InputStreamReader(newsocket.getInputStream(),"UTF-8"));
+		if(MessageManipulator.getInstance().shakeHand(in,newsocket.getOutputStream(),"MINET")){
+			sendRequestMessage();
+		};
+		
+		/*
+		while (true) {
+			Timer timer = new Timer();
+			timer.schedule(new Beat(), 0, 10000);
 		}
+		*/
 	}
-	private boolean HandleRequest() throws Exception{
+	public static String getTime() {
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date date = new Date();
+		String nowDate = format.format(date);
+		return nowDate;
+	}
+	public void sendRequestMessage() throws Exception{
+		String string = "P2P1.0 " + "P2PREQUEST " + uname + "\r\n";
+		string += "Date " + getTime() + "\r\n";
+		string += "Content-Type " +"text/html; charset=ISO-8859-1\r\n\r\n";
+		string += "\r\n";
 		try {
-			LinkedHashMap<String,LinkedHashMap<String,String> > msgMap =  MessageManipulator.getInstance().parseMessage(in);
-			String CSVersiont = msgMap.get("requestline").get("0");
-			String MsgType = msgMap.get("requestline").get("1");
-			String username = msgMap.get("requestline").get("2");
-			
-			if(MsgType.equals("P2PREQUEST")){
-				//TODO:process failed to login
-				
-				int n=JOptionPane.showConfirmDialog(null, "\""+username+"\"" + "请求与你建立P2P连接");
-				if(n ==0){
-					in.close();
-					out.close();
-					st.close();
-					return false;
-				}else{
-					LinkedHashMap<String,String> headRequest =new LinkedHashMap<String,String>();
-					LinkedHashMap<String,String> headline = new LinkedHashMap<String,String>();
-					LinkedHashMap<String,String> bodyline = new LinkedHashMap<String,String>();
-					headRequest.put("P2PVersion", "P2P1.0");
-					headRequest.put("MessageType","RESPONSEP2PASK");
-					headRequest.put("UserName",DataModel.getInstance().getUserName());
-					headline.put("Content-length", "0");
-					headline.put("Time", (new java.util.Date()).toString());
-					LinkedHashMap<String,LinkedHashMap<String,String> > msgMap1 = new LinkedHashMap<String,LinkedHashMap<String,String> >();
-					msgMap1.put("requestline", headRequest);
-					msgMap1.put("headline", headline);
-					msgMap1.put("body", bodyline);
-					String responseMsg = MessageManipulator.getInstance().formatAMessage(msgMap1);
-					st.getOutputStream().write(responseMsg.getBytes("UTF-8"));
-					
-					(new P2PChatView(st)).setTitle(username);
-					
-					return true;
-				}
+			newsocket.getOutputStream().write(string.getBytes("utf-8"));
+			TimOutCount();
+			if(HandleResponse()){
+				(new P2PChatView(newsocket)).setVisible(true);;
 			}
-			else{
-				in.close();
-				out.close();
-				st.close();
-				return false;
-			}
+
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
+	}
+	
+	public boolean HandleResponse(){
+		JOptionPane.showMessageDialog(null, "Connecting...");
+		try {
+			if(MessageManipulator.getInstance().parseMessage(in) != null){
+				hasResponsed =true;
+				return true;
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(null, "Failed to connect");
+			return false;
+			
+		}
+			
 		return false;
 	}
+	
+	public void TimOutCount(){
+        Timer timer  = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+            	try {
+            		if(hasResponsed ==false){
+            			newsocket.close();
+            		}
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+            }
+        }, 120000);
+    }
+	
 }

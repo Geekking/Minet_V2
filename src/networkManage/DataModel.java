@@ -10,7 +10,6 @@ import view.*;
 public class DataModel {
 	private static  String userName=null;
 	private  String passWord=null;
-	private  int p2pAcceptPort=5202;
 	private static DataModel userInfo = null;
 	private  String serverIPAddr = "172.18.157.254";
 	private int serverPort = 1234;
@@ -24,7 +23,6 @@ public class DataModel {
 	}
 	
 	private DataModel() throws Exception{
-		//new P2PDetectSocket();
 		onlineUsers = new ArrayList<ArrayList<String> >();
 	}
 	
@@ -42,9 +40,6 @@ public class DataModel {
 		return userName;
 	}
 	
-	public int getp2pAcceptPort(){
-		return p2pAcceptPort;
-	}
 	public String getServerIP(){
 		return serverIPAddr;
 	}
@@ -56,18 +51,6 @@ public class DataModel {
 	}
 	public void setpassWord(String password){
 		passWord = password;
-	}
-	
-	public void setp2pAcceptPort(int p2pport){
-		p2pAcceptPort = p2pport;
-	}
-	public boolean initUserInfo(String username,int p2pport){
-		if(userName == null){
-			userName = username;
-			p2pAcceptPort = p2pport;
-			return true;
-		}
-		else return false;
 	}
 	public boolean initOnlineUserlist(ArrayList<ArrayList<String> > onlineUserlist){
 		if (userName != null){
@@ -90,39 +73,6 @@ public class DataModel {
 		else {
 			return onlineUsers.get(index);
 		}
-	}
-	
-	public class P2PDetectSocket extends ServerSocket{
-		ServerSocket detectSocket;
-		public P2PDetectSocket()throws Exception{
-			super(DataModel.getInstance().getp2pAcceptPort());
-			detectSocket = this;
-			p2pAcceptPort = this.getLocalPort();
-			new DetectThread();
-		}
-		public class DetectThread extends Thread{
-			public DetectThread(){
-				start();
-			}
-			public void run(){
-				while (true) {
-					try {
-						Socket socket = detectSocket.accept();
-						try {
-							new P2PChatRequest(socket);
-						} catch (Exception e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					
-				}
-			}
-		}
-		
 	}
 	
 }

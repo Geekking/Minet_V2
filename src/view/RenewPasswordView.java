@@ -80,7 +80,12 @@ public class RenewPasswordView extends JFrame{
 				
 				if(isInputValid() && HandleRenewPassword()){
 					selfView.setVisible(false);
-					new LoginRegisterView(usernameField.getText());
+					try {
+						new LoginRegisterView(usernameField.getText());
+					} catch (Exception e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				}
 				
 			}
@@ -96,7 +101,12 @@ public class RenewPasswordView extends JFrame{
 				int n = JOptionPane.showConfirmDialog(null, "确认返回吗？");
 				if(n == 0){
 					selfView.setVisible(false);
-					new LoginRegisterView();
+					try {
+						new LoginRegisterView();
+					} catch (Exception e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				}
 			}
 		});
