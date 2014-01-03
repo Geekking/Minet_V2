@@ -244,7 +244,7 @@ public class ChatRoomView extends MouseAdapter {
 				headRequest.put("MessageType","LEAVE");
 				headRequest.put("UserName",DataModel.getInstance().getUserName());
 				headline.put("Content-length", "0");
-				headline.put("Time", (new java.util.Date()).toString());
+				headline.put("Time", P2PChatView.getTime());
 				LinkedHashMap<String,LinkedHashMap<String,String> > msgMap = new LinkedHashMap<String,LinkedHashMap<String,String> >();
 				msgMap.put("requestline", headRequest);
 				msgMap.put("headline", headline);
@@ -272,7 +272,7 @@ public class ChatRoomView extends MouseAdapter {
 						headRequest.put("MessageType","BEAT");
 						headRequest.put("UserName",DataModel.getInstance().getUserName());
 						headline.put("Content-length", "0");
-						headline.put("Time", (new java.util.Date()).toString());
+						headline.put("Time", P2PChatView.getTime());
 						LinkedHashMap<String,LinkedHashMap<String,String> > msgMap = new LinkedHashMap<String,LinkedHashMap<String,String> >();
 						msgMap.put("requestline", headRequest);
 						msgMap.put("headline", headline);
