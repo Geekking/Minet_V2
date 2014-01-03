@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import view.P2PChatResponse;
+import view.chatroom.P2PChatResponse;
 
 public class P2PDetectSocket extends ServerSocket{
 		private ServerSocket detectSocket;

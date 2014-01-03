@@ -22,7 +22,6 @@ public class MessageManipulator {
 		LinkedHashMap<String,String> headRequest = new LinkedHashMap<String,String>();
 		
 		String headrequestline = in.readLine();
-		System.out.println(headrequestline);
 		
 		String[] headrequestValues = headrequestline.split(" ");
 		for(int j=0;j<headrequestValues.length;j++){
@@ -132,18 +131,18 @@ public class MessageManipulator {
 			msg += "\r\n";
 		}
 		msg += "\r\n";
-		System.out.println(msg);
+		//System.out.println(msg);
 		return msg;
 	}
 	public boolean shakeHand(BufferedReader in,OutputStream out,String type) throws IOException{
 		
 		String clientShakeHandMessage = type+" "+"Client"+"\r\n";
-		System.out.println(clientShakeHandMessage);
+		//System.out.println(clientShakeHandMessage);
 		try{
 			out.write(clientShakeHandMessage.getBytes("UTF-8"));
 			//TODO:set a time out
 			String result = in.readLine();
-			System.out.println(result);
+			//System.out.println(result);
 			if(result.equals("MIRO"+" "+"Server")){
 				return true;
 			}
