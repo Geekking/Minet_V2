@@ -42,6 +42,7 @@ public class RenewPasswordView extends JFrame{
 	public RenewPasswordView(){
 		initView();
 		selfView = this;
+		selfView.setSize(350, 400);
 		this.setVisible(true);
 	}
 	private void initView(){

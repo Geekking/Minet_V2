@@ -58,7 +58,7 @@ public class P2PChatResponse {
 					String responseMsg = MessageManipulator.getInstance().formatAMessage(msgMap1);
 					st.getOutputStream().write(responseMsg.getBytes("UTF-8"));
 					
-					(new P2PChatView(st)).setTitle(username);
+					new P2PChatView(st,username);
 					
 					return true;
 				}

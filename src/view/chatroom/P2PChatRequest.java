@@ -11,6 +11,7 @@ import java.util.TimerTask;
 import javax.swing.JOptionPane;
 
 import view.p2p.P2PChatView;
+import networkManage.DataModel;
 import networkManage.MessageManipulator;
 
 
@@ -42,7 +43,7 @@ public class P2PChatRequest {
 		return nowDate;
 	}
 	public void sendRequestMessage() throws Exception{
-		String string = "P2P1.0 " + "P2PREQUEST " + uname + "\r\n";
+		String string = "P2P1.0 " + "P2PREQUEST " + DataModel.getInstance().getUserName() + "\r\n";
 		string += "Date " + getTime() + "\r\n";
 		string += "Content-Type " +"text/html; charset=ISO-8859-1\r\n\r\n";
 		string += "\r\n";
@@ -50,7 +51,7 @@ public class P2PChatRequest {
 			newsocket.getOutputStream().write(string.getBytes("utf-8"));
 			TimOutCount();
 			if(HandleResponse()){
-				new P2PChatView(newsocket);
+				new P2PChatView(newsocket,this.uname);
 			}
 
 		} catch (IOException e) {

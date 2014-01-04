@@ -1,6 +1,7 @@
 package view.chatroom;
 
 import java.awt.*;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
@@ -16,6 +17,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
 import javax.swing.*;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.DocumentFilter;
 
 import view.p2p.P2PChatView;
 import networkManage.*;
@@ -31,14 +34,18 @@ public class ChatRoomView extends MouseAdapter {
 	private ChatMessageModel chatMessageModel = null;
 	private JButton submitButton = null;
 	private JTextArea messageTosend = new JTextArea(4,20);
-	
+	private JScrollPane jScrollPane = null;
 	private  ChatRoomManage chatRoomManager = null;
 	private Socket socket;
 	private BufferedReader in;
 	private OutputStream outCS;
-	
+
 	public ChatRoomView(Socket sk) throws Exception{
 		initChatRoom();
+		Toolkit tk=Toolkit.getDefaultToolkit();
+		Image image=tk.createImage("Minet_LOGO.png"); /*image.gif是你的图标*/
+		chatRoom.setIconImage(image);
+		
 		socket = sk;
 		try {
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream(),"UTF-8"));
@@ -89,9 +96,13 @@ public class ChatRoomView extends MouseAdapter {
 		chatArea.setLayout(new BorderLayout());
 		chatMessageModel = new ChatMessageModel();
 		chatMessagelist = new JList<String>(chatMessageModel);
-		chatMessageModel.addElement("Welcome to MINET!");
+		chatMessagelist.setCellRenderer(new ChatMessageRender());
+		jScrollPane = new JScrollPane(chatMessagelist);
 		
-		chatArea.add(new JScrollPane(chatMessagelist),BorderLayout.NORTH);
+		chatMessageModel.addElement("Welcome to MINET!");
+		chatMessagelist.setAutoscrolls(false);
+		chatMessagelist.setFixedCellHeight(-1);
+		chatArea.add(jScrollPane,BorderLayout.NORTH);
 		
 		messageTosend.setLineWrap(true);
 		messageTosend.setAutoscrolls(true);
@@ -105,7 +116,7 @@ public class ChatRoomView extends MouseAdapter {
 					if (chatRoomManager.SendCSMessage(messageTosend.getText()) ){
 						messageTosend.setText(null);
 					}else{
-						//TODO:handle failure
+						
 					}
 				}
 				
@@ -136,9 +147,13 @@ public class ChatRoomView extends MouseAdapter {
 		onlinelist = new JList<String>(onlineUserModel);
 		onlinelist.addMouseListener(this);
 		onlinelist.setBorder(BorderFactory.createTitledBorder("在线用户"));
+		onlinelist.setPreferredSize(new Dimension(70,200));
 		updateOnlineUsersButton.addMouseListener(this);
-		onlineUserArea.add(updateOnlineUsersButton);
-		onlineUserArea.add(new JScrollPane(onlinelist));
+		
+		onlineUserArea.setLayout(new BorderLayout());
+		
+		onlineUserArea.add(new JScrollPane(onlinelist),BorderLayout.CENTER);
+		onlineUserArea.add(updateOnlineUsersButton,BorderLayout.NORTH);
 	}
 	// 处理鼠标键击事件.
 	public void mouseClicked(MouseEvent e) {
@@ -149,7 +164,7 @@ public class ChatRoomView extends MouseAdapter {
 				index = onlinelist.locationToIndex(e.getPoint());
 				try {
 					ArrayList<String> oneUser = DataModel.getInstance().getOnlineUser(index);
-					if( !oneUser.get(1).equals(DataModel.getInstance().getUserName())){
+					if( !oneUser.get(0).equals(DataModel.getInstance().getUserName())){
 						new P2PChatRequest(oneUser.get(1), oneUser.get(2), oneUser.get(0));
 						
 					}
@@ -191,7 +206,7 @@ public class ChatRoomView extends MouseAdapter {
 				headRequest.put("CSVersion", "CS1.0");
 				headRequest.put("MessageType","GETLIST");
 				headline.put("Content-length", "0");
-				headline.put("Time", (new java.util.Date()).toString());
+				headline.put("Time", P2PChatView.getTime());
 				LinkedHashMap<String,LinkedHashMap<String,String> > msgMap = new LinkedHashMap<String,LinkedHashMap<String,String> >();
 				msgMap.put("requestline", headRequest);
 				msgMap.put("headline", headline);
@@ -206,9 +221,11 @@ public class ChatRoomView extends MouseAdapter {
 		}
 		public boolean SendCSMessage(String msgTosend){
 			try{
-				msgTosend.replace("\r", "");
-				msgTosend.replace("\n", "");
+				while(msgTosend.endsWith("\n")){
+					msgTosend = msgTosend.substring(0, msgTosend.lastIndexOf('\n'));
+				}
 				if(msgTosend.length() ==0){
+					messageTosend.setText(null);
 					return false;
 				}
 				
@@ -329,14 +346,17 @@ public class ChatRoomView extends MouseAdapter {
 				LinkedHashMap<String,String> bodyline = MessageManipulator.getInstance().getEntityMessage(in);
 				
 				String time = headline.get("Date");
+				time = time.substring(time.lastIndexOf(' '));
 				String msgDetail = bodyline.get("Entity");
-				System.out.println(username);
 				if(true){
-					msgCell += username+":";
-					msgCell += time +"\n";
+					msgCell += username+" ";
+					msgCell += time+" " +"\n";
 					msgCell += msgDetail;
 				}
 				chatMessageModel.addElement(msgCell);
+				int lastIndex = chatMessageModel.getSize();
+				JScrollBar jsBar = jScrollPane.getVerticalScrollBar();
+				jsBar.setValue(jsBar.getMaximum());
 			}
 			public void HandleOnlineUsersInit() throws Exception{
 				
@@ -347,7 +367,6 @@ public class ChatRoomView extends MouseAdapter {
 				String time = headline.get("Time");
 				String msgDetail = bodyline.get("Entity");
 				String[] userlist = msgDetail.split("\n");
-				System.out.println(msgDetail);
 				DataModel.getInstance().resetOnlineUsers();
 				onlineUserModel.resetOnlineUser();
 				
@@ -421,16 +440,7 @@ public class ChatRoomView extends MouseAdapter {
 		}
 		
 	}
-	class ChatMessageModel extends DefaultListModel{
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
-
-		public ChatMessageModel(){
-		
-		}
-	}
+	
 	class OnlineUserModel extends DefaultListModel{
 		/**
 		 * 
@@ -442,5 +452,16 @@ public class ChatRoomView extends MouseAdapter {
 			this.removeAllElements();
 		}
 	}
+	class ChatMessageModel extends DefaultListModel{
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
+		public ChatMessageModel(){
+		
+		}
+	}
+	
 }
 

@@ -92,11 +92,10 @@ public class FileSender extends Thread{
 			      break; 
 			    } 
 			    dos.write(bufArray, 0, read); 
-			    int i = (int)Math.random()*100;
-			    System.out.println(i);
-			    jp.setValue(i);
+			    jp.setValue(80);
 			  } 
 			  dos.flush();
+			  jp.setValue(100);
 			  sleep(2000);
 			  contFrame.setVisible(false);
 			  contFrame = null;

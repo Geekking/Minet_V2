@@ -2,6 +2,8 @@ package view.p2p;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -29,17 +31,15 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.ListCellRenderer;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import networkManage.*;
-
+import view.chatroom.*;
 public class P2PChatView extends JFrame{
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	private JPanel chatArea = new JPanel();
 	private JList<String> chatMessagelist = null;
@@ -54,11 +54,20 @@ public class P2PChatView extends JFrame{
 	private String savePath ="";
 	private String sendPath = "";
 	private FileSender sender = null;
-	public P2PChatView(Socket st) throws Exception{
+	private boolean isAlive = true;
+	JScrollPane jScrollPane = null;
+	JScrollBar jsb = null;
+	public P2PChatView(Socket st,String pname) throws Exception{
 		socket = st;
+	
+		Toolkit tk=Toolkit.getDefaultToolkit();
+		Image image=tk.createImage("Minet_LOGO.png"); /*image.gif是你的图标*/
+		setIconImage(image);
+	
 		initUserInterface();
 		self.setVisible(true);
 		uname = DataModel.getInstance().getUserName();
+		self.setTitle(pname);
 		self.addWindowListener(new WindowAdapter(){
 	     	 public void windowClosing(WindowEvent e){
 		     	   System.out.println("You join P2P chatroom");
@@ -128,7 +137,14 @@ public class P2PChatView extends JFrame{
 		return false;
 	}
 	public boolean sendmessage(String data) {
-		
+		String msgTosend = data;
+		while(msgTosend.endsWith("\n")){
+			msgTosend = msgTosend.substring(0, msgTosend.lastIndexOf('\n'));
+		}
+		if(msgTosend.length() ==0){
+			messageTosend.setText(null);
+			return false;
+		}
 		String string = "P2P1.0 " + "P2PMESSAGE " + uname + "\r\n";
 		string += "Date " + getTime() + "\r\n";
 		string += "Content-Type " +"text/html; charset=ISO-8859-1\r\n\r\n";
@@ -158,7 +174,7 @@ public class P2PChatView extends JFrame{
 		}
 	}
 	public static String getTime() {
-		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
 		Date date = new Date();
 		String nowDate = format.format(date);
 		return nowDate;
@@ -203,7 +219,13 @@ public class P2PChatView extends JFrame{
 		chatArea.setLayout(new BorderLayout());
 		chatMessageModel = new ChatMessageModel();
 		chatMessagelist = new JList<String>(chatMessageModel);
-		chatArea.add(new JScrollPane(chatMessagelist),BorderLayout.NORTH);
+		chatMessagelist.setFixedCellWidth(330);
+		chatMessagelist.setAutoscrolls(true);
+		
+		chatMessagelist.setCellRenderer(new ChatMessageRender());
+		chatMessagelist.setFixedCellHeight(-1);
+		jScrollPane = new JScrollPane(chatMessagelist);
+		chatArea.add(jScrollPane,BorderLayout.NORTH);
 		
 		messageTosend.setLineWrap(true);
 		messageTosend.setAutoscrolls(true);
@@ -218,19 +240,13 @@ public class P2PChatView extends JFrame{
 			@Override
 			public void keyReleased(KeyEvent e) {
 				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void keyPressed(KeyEvent e) {
-				// TODO Auto-generated method stub
 				if(e.getKeyChar() =='\n'){
 					if(messageTosend.getText().length() !=0){
 						try {
 							if(sendmessage(messageTosend.getText())){
 								String msgCell ="";
 								if(true){
-									msgCell += "I said:"+"\n";
+									msgCell += "我 ";
 									msgCell += getTime() +"\n";
 									msgCell += messageTosend.getText();
 									messageTosend.setText("");
@@ -244,6 +260,12 @@ public class P2PChatView extends JFrame{
 						}
 					}
 				}
+			}
+			
+			@Override
+			public void keyPressed(KeyEvent e) {
+				// TODO Auto-generated method stub
+				
 				
 			}
 		});
@@ -261,7 +283,7 @@ public class P2PChatView extends JFrame{
 						if(sendmessage(messageTosend.getText())){
 							String msgCell ="";
 							if(true){
-								msgCell += "I said:"+"\n";
+								msgCell += "我 ";
 								msgCell += getTime() +"\n";
 								msgCell += messageTosend.getText();
 								messageTosend.setText("");
@@ -288,9 +310,12 @@ public class P2PChatView extends JFrame{
 			while(true){
 				long curMil = java.lang.System.currentTimeMillis();
 				if(curMil - LastBeatTime >30000){
-					System.out.println(curMil);
-					System.out.println(LastBeatTime);
-					JOptionPane.showMessageDialog(null, "Failed to connect to the other site");
+					if(isAlive){
+						JOptionPane.showMessageDialog(null, "Failed to connect to the other side");
+					}
+					if(curMil - LastBeatTime >180000){
+						isAlive = false;
+					}
 				}
 				try {
 					sleep(10000);
@@ -380,10 +405,12 @@ public class P2PChatView extends JFrame{
 				}
 			}
 			else {
-				msgCell += username+"\n";
+				msgCell += username+" ";
 				msgCell += time +"\n";
 				msgCell += msgDetail;
 				chatMessageModel.addElement(msgCell);
+				jsb = jScrollPane.getVerticalScrollBar();
+				jsb.setValue(jsb.getMaximum());
 			}
 		}
 		public boolean sendRefuseMessage(String filename){

@@ -47,10 +47,6 @@ public class RegisteView extends JFrame{
 			setVisible(true);
 			self = this;
 			this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			this.userNameField.setText("demo");
-			this.passswordField.setText("12345");
-			this.confpswField.setText("12345");
-			this.emailField.setText("demo.@minet.com");
 		}
 		public void initView(){
 			this.setLayout(new FlowLayout());
@@ -209,10 +205,16 @@ public class RegisteView extends JFrame{
 					
 					String registeState = in.readLine();
 					System.out.println(registeState);
-					JOptionPane.showMessageDialog(null, registeState);
-					new LoginRegisterView("");
-					self.setVisible(false);
-					self = null;
+					if(registeState.equals("FAIL")){
+						JOptionPane.showMessageDialog(null, "用户名已被注册");
+					}
+					else{
+						JOptionPane.showMessageDialog(null, "恭喜，注册成功");
+						new LoginRegisterView(userNameField.getText());
+						self.setVisible(false);
+						self = null;
+					}
+					
 					
 				} catch (IOException e) {
 					// TODO Auto-generated catch block

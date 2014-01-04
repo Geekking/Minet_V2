@@ -35,8 +35,10 @@ public class MessageManipulator {
 		LinkedHashMap<String,String> headline = new LinkedHashMap<String,String>();
 		String headlineStr = in.readLine();
 		while(headlineStr.length() >0){
+			String value = headlineStr.substring(headlineStr.indexOf(' '));
 			String[] headlineValues = headlineStr.split(" ");
-			headline.put(headlineValues[0], headlineValues[1]);
+			value = value.substring(1, value.length());
+			headline.put(headlineValues[0], value);
 			headlineStr = in.readLine();
 		}
 		return headline;
@@ -77,7 +79,7 @@ public class MessageManipulator {
 			headlineStr = in.readLine();
 		}
 		String oneEntityline = in.readLine();
-		String entityMsg = oneEntityline;
+		String entityMsg = "";
 		while(oneEntityline.length() >0){
 			entityMsg += oneEntityline+"\n";
 			oneEntityline = in.readLine();

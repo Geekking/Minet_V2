@@ -280,6 +280,7 @@ public class LoginRegisterView extends JFrame{
 				
 				if(loginState.equals("0")){
 					//TODO:process failed to login
+					System.out.println(MsgDetail);
 					JOptionPane.showMessageDialog(null, MsgDetail);
 				}
 				else{

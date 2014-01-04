@@ -3,6 +3,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -62,7 +63,7 @@ public class FileReceiver extends Thread{
         long len = 0; 
         // 获取文件名称 
        try{
-    	savePath += dis.readUTF(); 
+    	savePath += File.separatorChar +dis.readUTF(); 
         DataOutputStream fileOut = new DataOutputStream( 
             new BufferedOutputStream(new BufferedOutputStream( 
                 new FileOutputStream(savePath)))); 
@@ -82,6 +83,7 @@ public class FileReceiver extends Thread{
             System.out.println("文件接收了" + (passedlen * 100 / len) + "%"); 
             fileOut.write(buf, 0, read); 
           } 
+         jp.setValue(100);
           sleep(1000);
           contFrame.setVisible(false);
           contFrame = null;
