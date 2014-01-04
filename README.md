@@ -19,16 +19,17 @@ PlatForm Need:
 <br>Open client,</br>
 <br>Modify some variable if neccesary.</br>
 
-Modify ServerAddress and Server Port:
+<br>Modify ServerAddress and Server Port:</br>
 	Change the ip address in the DataModel src and Server Port
-Modify DataBase:
+<br>Modify DataBase:</br>
 	Change the variable in the ChatServer src
 
-To do:
-data encryption
-emotion chat
-and so on .
+<br>To do:</br>
+<br>data encryption</br>
+<br>emotion chat</br>
+<br>and so on .</br>
 
-Thanks [Beauty eye](https://code.google.com/p/beautyeye/)
-You are welcome to join us.
+<br>Thanks [Beauty eye](https://code.google.com/p/beautyeye/)</br>
+
+For Reader:You are welcome to join us.
 
