@@ -13,11 +13,11 @@ PlatForm Need:
     Mysql 5.5 or later
 	Windows,MacOs,linux ...
 	
-How to use:
-Open Database,
-Open server,
-Open client,
-Modify some variable if neccesary.
+<br>How to use:</br>
+<br>Open Database,</br>
+<br>Open server,</br>
+<br>Open client,</br>
+<br>Modify some variable if neccesary.</br>
 
 Modify ServerAddress and Server Port:
 	Change the ip address in the DataModel src and Server Port
@@ -29,5 +29,6 @@ data encryption
 emotion chat
 and so on .
 
+Thanks [Beauty eye](https://code.google.com/p/beautyeye/)
 You are welcome to join us.
 
